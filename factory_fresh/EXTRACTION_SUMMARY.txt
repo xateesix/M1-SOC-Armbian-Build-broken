@@ -1,0 +1,90 @@
+Factory firmware extraction — Artillery M1 Pro S1-SOC (RK3308BS)
+Updated: 2026-06-10
+
+=== WHAT THIS IS GOOD FOR ===
+
+Reference only — NOT a magic “make Armbian boot” button:
+  - Factory partition blobs (03_partitions/)
+  - Decompiled device tree (05_dts/rk3308-factory.dts)
+  - Boot.img layout notes (04_boot_unpacked/)
+  - Repack smoke tests (06_smoke_test/)
+
+=== WHAT WAS BROKEN (AND WHY FLASH FAILED) ===
+
+1) v1 smoke image (SMOKE_TEST_serial_console.img)
+   Rebuilt boot.img with mkbootimg + UNCOMPRESSED kernel.
+   Factory boot.img uses LZ4-compressed kernel — U-Boot rejects v1 images.
+
+2) pack-armbian-for-emmc.sh (OLD)
+   Same mkbootimg mistake. Also used console=ttyS3 while factory DTB still
+   enables fiq-debugger on UART3 — ttyS3 and ttyFIQ0 conflict on same pins.
+
+3) Boot cmdline vs device tree
+   Factory boot.img header cmdline is EMPTY. Real bootargs live in DTB
+   chosen node: console=ttyFIQ0 + fiq-debugger on serial-id 3 @ 1500000.
+   Patching only boot.img to ttyS3 without changing resource.img DTB usually
+   gives no serial output.
+
+4) Rootfs UUID
+   Factory cmdline uses root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9.
+   Swapping rootfs.img without tune2fs -U to that UUID breaks boot.
+
+5) unpack-boot.sh had wrong path (fixed — now script-relative).
+
+=== DIRECTORIES ===
+
+  01_update_img/       Raw .img from zip
+  02_rkimagemaker/     boot.bin + firmware.img
+  03_partitions/       Flashable partitions (~5 GB) — use as --factory
+  04_boot_unpacked/    Kernel + resource.img (from unpack-boot.sh)
+  05_dts/              rk3308-factory.dts + .dtb
+  06_smoke_test/       Serial / repack validation images
+  tools/               patch-bootimg-cmdline.sh
+
+=== FACTORY BOOT CHAIN ===
+
+  boot.img cmdline in header:  EMPTY (bootargs come from DTB until patched)
+  Linux bootargs (in DTS):     console=ttyFIQ0 earlycon=uart8250,mmio32,0xff0d0000
+  boot.img kernel:             LZ4 inside Android boot image — DO NOT replace with raw vmlinuz
+  boot.img second slot:        Rockchip resource.img (DTB bundle)
+
+=== SMOKE TEST ORDER (flash with RKDevTool → Upgrade Firmware) ===
+
+  1) 06_smoke_test/SMOKE_v2_repack_only/SMOKE_v2_repack_only.img
+     Exact factory boot.img + repacked rest. Must behave like factory.
+     If this FAILS: repack/flash/hardware — not console settings.
+
+  2) 06_smoke_test/SMOKE_v2_fiq_console/SMOKE_v2_fiq_console.img
+     Patched boot.img cmdline: console=ttyFIQ0 (matches factory DTB)
+     Serial: UART3 @ 1500000, jumper on SERIAL
+
+  3) 06_smoke_test/SMOKE_v2_ttyS3_console/SMOKE_v2_ttyS3_console.img
+     Patched cmdline: console=ttyS3 — may NOT work until resource.img DTB
+     disables fiq-debugger. Prefer fiq_console for factory kernel.
+
+  DO NOT flash: SMOKE_TEST_serial_console.img (v1 / broken)
+
+=== ARMBIAN PACK (FIXED pack-armbian-for-emmc.sh) ===
+
+  On Ubuntu/WSL:
+    ./pack-armbian-for-emmc.sh \
+      --armbian /path/to/Armbian-*.img \
+      --factory factory_fresh/03_partitions \
+      --out pack_work
+
+  On Windows:
+    .\\windows-pack-update.ps1 -PackInput pack_work\\pack_input
+
+  Script now:
+    - Keeps factory boot.img (LZ4 kernel + resource.img)
+    - Patches cmdline only (default console=ttyFIQ0)
+    - Replaces rootfs.img from Armbian partition
+    - Sets ext4 UUID to factory PARTUUID via tune2fs
+
+  Still uses FACTORY kernel until you build a Rockchip-format LZ4 boot.img
+  with your Armbian kernel — that is a separate step.
+
+=== RUN RK3308_AUDIT.SH ON THE BOARD ===
+
+  After any flash that boots, run RK3308_AUDIT.SH on-device and compare
+  device_tree/ + dmesg to factory_fresh/05_dts/.
