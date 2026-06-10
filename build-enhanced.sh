@@ -111,7 +111,14 @@ EOF
 # ==================== REMOTE BUILD ==========================================
 
 _build_remote() {
-    SSH_CMD="ssh -o ConnectTimeout=5 $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
+    SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new"
+    if [ -n "${SSHPASS:-}" ] && command -v sshpass >/dev/null 2>&1; then
+        SSH_CMD="sshpass -e ssh $SSH_OPTS $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
+        SCP_CMD="sshpass -e scp $SSH_OPTS"
+    else
+        SSH_CMD="ssh $SSH_OPTS $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
+        SCP_CMD="scp $SSH_OPTS"
+    fi
     SSH_PATH="$BUILD_SERVER_PATH"
 
     step "PHASE 1: Preparing build server"
@@ -154,22 +161,22 @@ EOF_INIT_REPO
 
     # Copy artifacts
     info "Uploading configuration..."
-    scp -q "$SCRIPT_DIR/rk3308bs-evb.conf" \
+    $SCP_CMD -q "$SCRIPT_DIR/rk3308bs-evb.conf" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_board.conf"
-    scp -q "$PATCH_FILE" \
+    $SCP_CMD -q "$PATCH_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_kernel.patch"
-    scp -q "$DTS_FILE" \
+    $SCP_CMD -q "$DTS_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_device.dts"
     if [ -d "$SCRIPT_DIR/overlay-user" ]; then
-        scp -rq "$SCRIPT_DIR/overlay-user/" \
+        $SCP_CMD -rq "$SCRIPT_DIR/overlay-user/" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_overlay-user/"
     fi
     if [ -f "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" ]; then
-        scp -q "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
+        $SCP_CMD -q "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_hardware-chroot.sh"
     fi
     if [ -f "$SCRIPT_DIR/userpatches-customize-image.sh" ]; then
-        scp -q "$SCRIPT_DIR/userpatches-customize-image.sh" \
+        $SCP_CMD -q "$SCRIPT_DIR/userpatches-customize-image.sh" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_customize-image.sh"
     fi
     info "Configuring WiFi and root password..."
@@ -285,7 +292,7 @@ EOF_SETUP
     IMG_NAME=$(basename "$LATEST")
     info "Downloading: $IMG_NAME"
 
-    scp -q "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$LATEST" "$SCRIPT_DIR/$IMG_NAME"
+    $SCP_CMD -q "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$LATEST" "$SCRIPT_DIR/$IMG_NAME"
 
     info ""
     info "═════════════════════════════════════════════"
