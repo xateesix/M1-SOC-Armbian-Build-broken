@@ -124,6 +124,10 @@ EOF_INIT_REPO
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_kernel.patch"
     scp -q "$SCRIPT_DIR/rk3308bs-evb-amic-v11.dts" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_device.dts"
+    if [ -d "$SCRIPT_DIR/overlay-user" ]; then
+        scp -rq "$SCRIPT_DIR/overlay-user/" \
+            "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_overlay-user/"
+    fi
 
     # Setup WiFi and root password via remote script
     info "Configuring WiFi and root password..."
@@ -189,6 +193,11 @@ WWIF
 
 chmod +x "\$BUILD_PATH/userpatches/overlay-user/etc/systemd/system-sleep/99-wifi-restart"
 
+# Serial getty @ 1500000 (overlay from repo if present)
+if [ -d "\$BUILD_PATH/_overlay-user" ]; then
+    cp -a "\$BUILD_PATH/_overlay-user/." "\$BUILD_PATH/userpatches/overlay-user/"
+fi
+
 echo "✓ Configuration ready"
 EOF_SETUP
 
@@ -197,7 +206,7 @@ EOF_SETUP
     echo ""
 
     # Invoke build with extended timeout
-    if $SSH_CMD "cd $SSH_PATH && timeout 120m bash -c 'EXPERT=yes PREFER_DOCKER=no ./compile.sh kernel rockchip64-current'" 2>&1 | tee build-remote.log; then
+    if $SSH_CMD "cd $SSH_PATH && timeout 180m bash -c 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=current RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
         BUILD_OK=1
     else
         BUILD_OK=0
