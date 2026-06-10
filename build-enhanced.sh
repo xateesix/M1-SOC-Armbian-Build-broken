@@ -116,6 +116,7 @@ BUILD_MINIMAL=yes
 EXPERT=yes
 PREFER_DOCKER=no
 EOF
+    ln -sf config.conf "$BUILD_PATH/userpatches/config-default.conf"
 }
 
 # ==================== REMOTE BUILD ==========================================
@@ -183,15 +184,15 @@ if [ ! -d "\$BUILD_PATH/.git" ]; then
     echo "Cloning Armbian..."
     cd /tmp
     rm -rf armbian-build-clone 2>/dev/null || true
-    git clone --depth=1 --branch master https://github.com/armbian/build.git armbian-build-clone
+    git clone --depth=1 --branch main https://github.com/armbian/build.git armbian-build-clone
     mv armbian-build-clone/* "\$BUILD_PATH/" 2>/dev/null || true
     mv armbian-build-clone/.* "\$BUILD_PATH/" 2>/dev/null || true
     rm -rf armbian-build-clone
 else
     echo "Updating Armbian..."
     cd "\$BUILD_PATH"
-    git fetch --depth=1
-    git reset --hard origin/master
+    git fetch --depth=1 origin
+    git reset --hard origin/main
 fi
 
 echo "✓ Armbian repo ready"
@@ -296,7 +297,7 @@ if [ -f "\$BUILD_PATH/_customize-image.sh" ]; then
     chmod +x "\$BUILD_PATH/userpatches/customize-image.sh"
 fi
 
-# Non-interactive build (avoid config-example.conf interactive prompts)
+# Non-interactive build (config-default.conf must resolve — symlink to our config)
 rm -f "\$BUILD_PATH/userpatches/config-example.conf"
 cat > "\$BUILD_PATH/userpatches/config.conf" <<CFG
 BOARD=rk3308bs-evb
@@ -306,6 +307,7 @@ BUILD_MINIMAL=yes
 EXPERT=yes
 PREFER_DOCKER=no
 CFG
+ln -sf config.conf "\$BUILD_PATH/userpatches/config-default.conf"
 
 echo "✓ Configuration ready"
 EOF_SETUP
@@ -320,7 +322,7 @@ EOF_SETUP
     else
         COMPILE_WRAP="bash -c"
     fi
-    if ssh_remote "cd $SSH_PATH && echo '$SUDO_PW' | sudo -S env CI=true BUILD_ALL=yes timeout 180m bash -c 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=${KERNEL_BRANCH:-current} RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
+    if ssh_remote "echo '$SUDO_PW' | sudo -S bash -c 'cd $SSH_PATH && env CI=true BUILD_ALL=yes timeout 180m ./compile.sh'" 2>&1 | tee build-remote.log; then
         BUILD_OK=1
     else
         BUILD_OK=0
