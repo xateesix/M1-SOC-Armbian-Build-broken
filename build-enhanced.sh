@@ -64,6 +64,7 @@ done
 _install_userpatches() {
     local BUILD_PATH="$1"
 
+    mkdir -p "$BUILD_PATH/config/boards" "$BUILD_PATH/userpatches/overlay-user"
     cp "$SCRIPT_DIR/rk3308bs-evb.conf" "$BUILD_PATH/config/boards/rk3308bs-evb.conf"
     sed -i 's/\r$//' "$BUILD_PATH/config/boards/rk3308bs-evb.conf"
 
@@ -106,6 +107,15 @@ EOF
             "$BUILD_PATH/userpatches/customize-image.sh"
         chmod +x "$BUILD_PATH/userpatches/customize-image.sh"
     fi
+
+    cat > "$BUILD_PATH/userpatches/config.conf" <<EOF
+BOARD=rk3308bs-evb
+BRANCH=${KERNEL_BRANCH:-current}
+RELEASE=${RELEASE:-bookworm}
+BUILD_MINIMAL=yes
+EXPERT=yes
+PREFER_DOCKER=no
+EOF
 }
 
 # ==================== REMOTE BUILD ==========================================
@@ -196,6 +206,7 @@ EOF_INIT_REPO
     scp_remote -q "$DTS_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_device.dts"
     if [ -d "$SCRIPT_DIR/overlay-user" ]; then
+        ssh_remote mkdir -p "$SSH_PATH/_overlay-user"
         scp_remote -r -q "$SCRIPT_DIR/overlay-user/" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_overlay-user/"
     fi
@@ -285,6 +296,17 @@ if [ -f "\$BUILD_PATH/_customize-image.sh" ]; then
     chmod +x "\$BUILD_PATH/userpatches/customize-image.sh"
 fi
 
+# Non-interactive build (avoid config-example.conf interactive prompts)
+rm -f "\$BUILD_PATH/userpatches/config-example.conf"
+cat > "\$BUILD_PATH/userpatches/config.conf" <<CFG
+BOARD=rk3308bs-evb
+BRANCH=${KERNEL_BRANCH:-current}
+RELEASE=${RELEASE:-bookworm}
+BUILD_MINIMAL=yes
+EXPERT=yes
+PREFER_DOCKER=no
+CFG
+
 echo "✓ Configuration ready"
 EOF_SETUP
 
@@ -298,14 +320,14 @@ EOF_SETUP
     else
         COMPILE_WRAP="bash -c"
     fi
-    if ssh_remote "cd $SSH_PATH && timeout 180m $COMPILE_WRAP 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=${KERNEL_BRANCH:-current} RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
+    if ssh_remote "cd $SSH_PATH && echo '$SUDO_PW' | sudo -S env CI=true BUILD_ALL=yes timeout 180m bash -c 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=${KERNEL_BRANCH:-current} RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
         BUILD_OK=1
     else
         BUILD_OK=0
     fi
 
     if [ "$BUILD_OK" != "1" ]; then
-        warn "Build may have timed out or failed. Checking for output image..."
+        error "Armbian compile failed — see build-remote.log"
     fi
 
     step "PHASE 3: Retrieving image from server"
