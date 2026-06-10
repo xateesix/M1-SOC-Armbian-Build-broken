@@ -112,46 +112,74 @@ EOF
 
 _build_remote() {
     SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new"
-    if [ -n "${SSHPASS:-}" ] && command -v sshpass >/dev/null 2>&1; then
-        SSH_CMD="sshpass -e ssh $SSH_OPTS $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
-        SCP_CMD="sshpass -e scp $SSH_OPTS"
-    else
-        SSH_CMD="ssh $SSH_OPTS $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
-        SCP_CMD="scp $SSH_OPTS"
+    PLINK="/mnt/c/Program Files/PuTTY/plink.exe"
+    PSCP="/mnt/c/Program Files/PuTTY/pscp.exe"
+    REMOTE_PASS="${SSH_PASSWORD:-${SUDO_PASSWORD:-}}"
+    USE_PLINK=0
+    if [ -n "$REMOTE_PASS" ] && [ -f "$PLINK" ]; then
+        USE_PLINK=1
     fi
     SSH_PATH="$BUILD_SERVER_PATH"
+    SUDO_PW="${SUDO_PASSWORD:-$REMOTE_PASS}"
+
+    ssh_remote() {
+        if [ "$USE_PLINK" = "1" ]; then
+            "$PLINK" -batch -pw "$REMOTE_PASS" "$BUILD_SERVER_USER@$BUILD_SERVER_HOST" "$@"
+        elif [ -n "${SSHPASS:-}" ] && command -v sshpass >/dev/null 2>&1; then
+            sshpass -e ssh $SSH_OPTS "$BUILD_SERVER_USER@$BUILD_SERVER_HOST" "$@"
+        else
+            ssh $SSH_OPTS "$BUILD_SERVER_USER@$BUILD_SERVER_HOST" "$@"
+        fi
+    }
+    scp_remote() {
+        if [ "$USE_PLINK" = "1" ]; then
+            local args=()
+            for a in "$@"; do
+                if [[ "$a" == *@*:* ]]; then
+                    args+=("$a")
+                elif [[ -e "$a" ]] || [[ -d "$a" ]]; then
+                    args+=("$(wslpath -w "$a")")
+                else
+                    args+=("$a")
+                fi
+            done
+            "$PSCP" -batch -pw "$REMOTE_PASS" "${args[@]}"
+        elif [ -n "${SSHPASS:-}" ] && command -v sshpass >/dev/null 2>&1; then
+            sshpass -e scp $SSH_OPTS "$@"
+        else
+            scp $SSH_OPTS "$@"
+        fi
+    }
 
     step "PHASE 1: Preparing build server"
     
-    # Test SSH connection
-    if ! $SSH_CMD true 2>/dev/null; then
+    if ! ssh_remote true 2>/dev/null; then
         warn "Cannot connect to $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
         return 1
     fi
     info "✓ SSH connection OK"
 
-    # Ensure build directory
     info "Ensuring build directory: $SSH_PATH"
-    $SSH_CMD mkdir -p "$SSH_PATH"
+    ssh_remote mkdir -p "$SSH_PATH"
 
     # Initialize or update Armbian repo
     info "Setting up Armbian repository..."
-    $SSH_CMD 'bash -s' <<'EOF_INIT_REPO'
+    ssh_remote 'bash -s' <<EOF_INIT_REPO
 #!/bin/bash
 set -e
-BUILD_PATH="/home/xateesix/armbian-build"
+BUILD_PATH="$SSH_PATH"
 
-if [ ! -d "$BUILD_PATH/.git" ]; then
+if [ ! -d "\$BUILD_PATH/.git" ]; then
     echo "Cloning Armbian..."
     cd /tmp
     rm -rf armbian-build-clone 2>/dev/null || true
     git clone --depth=1 --branch master https://github.com/armbian/build.git armbian-build-clone
-    mv armbian-build-clone/* "$BUILD_PATH/" 2>/dev/null || true
-    mv armbian-build-clone/.* "$BUILD_PATH/" 2>/dev/null || true
+    mv armbian-build-clone/* "\$BUILD_PATH/" 2>/dev/null || true
+    mv armbian-build-clone/.* "\$BUILD_PATH/" 2>/dev/null || true
     rm -rf armbian-build-clone
 else
     echo "Updating Armbian..."
-    cd "$BUILD_PATH"
+    cd "\$BUILD_PATH"
     git fetch --depth=1
     git reset --hard origin/master
 fi
@@ -161,26 +189,26 @@ EOF_INIT_REPO
 
     # Copy artifacts
     info "Uploading configuration..."
-    $SCP_CMD -q "$SCRIPT_DIR/rk3308bs-evb.conf" \
+    scp_remote -q "$SCRIPT_DIR/rk3308bs-evb.conf" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_board.conf"
-    $SCP_CMD -q "$PATCH_FILE" \
+    scp_remote -q "$PATCH_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_kernel.patch"
-    $SCP_CMD -q "$DTS_FILE" \
+    scp_remote -q "$DTS_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_device.dts"
     if [ -d "$SCRIPT_DIR/overlay-user" ]; then
-        $SCP_CMD -rq "$SCRIPT_DIR/overlay-user/" \
+        scp_remote -r -q "$SCRIPT_DIR/overlay-user/" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_overlay-user/"
     fi
     if [ -f "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" ]; then
-        $SCP_CMD -q "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
+        scp_remote -q "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_hardware-chroot.sh"
     fi
     if [ -f "$SCRIPT_DIR/userpatches-customize-image.sh" ]; then
-        $SCP_CMD -q "$SCRIPT_DIR/userpatches-customize-image.sh" \
+        scp_remote -q "$SCRIPT_DIR/userpatches-customize-image.sh" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_customize-image.sh"
     fi
     info "Configuring WiFi and root password..."
-    $SSH_CMD 'bash -s' <<EOF_SETUP
+    ssh_remote 'bash -s' <<EOF_SETUP
 #!/bin/bash
 set -e
 BUILD_PATH="$SSH_PATH"
@@ -265,7 +293,12 @@ EOF_SETUP
     echo ""
 
     # Invoke build with extended timeout
-    if $SSH_CMD "cd $SSH_PATH && timeout 180m bash -c 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=current RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
+    if [ -n "$SUDO_PW" ]; then
+        COMPILE_WRAP="echo '$SUDO_PW' | sudo -S bash -c"
+    else
+        COMPILE_WRAP="bash -c"
+    fi
+    if ssh_remote "cd $SSH_PATH && timeout 180m $COMPILE_WRAP 'EXPERT=yes PREFER_DOCKER=no ./compile.sh BOARD=rk3308bs-evb BRANCH=${KERNEL_BRANCH:-current} RELEASE=${RELEASE:-bookworm} BUILD_MINIMAL=yes'" 2>&1 | tee build-remote.log; then
         BUILD_OK=1
     else
         BUILD_OK=0
@@ -278,11 +311,11 @@ EOF_SETUP
     step "PHASE 3: Retrieving image from server"
 
     # Find latest image
-    LATEST=$($SSH_CMD "ls -t $SSH_PATH/output/images/*.img 2>/dev/null | head -1" || echo "")
+    LATEST=$(ssh_remote "ls -t $SSH_PATH/output/images/*.img 2>/dev/null | head -1" || echo "")
 
     if [ -z "$LATEST" ]; then
         # Try compressed
-        LATEST=$($SSH_CMD "ls -t $SSH_PATH/output/images/*.img.xz 2>/dev/null | head -1" || echo "")
+        LATEST=$(ssh_remote "ls -t $SSH_PATH/output/images/*.img.xz 2>/dev/null | head -1" || echo "")
     fi
 
     if [ -z "$LATEST" ]; then
@@ -292,16 +325,16 @@ EOF_SETUP
     IMG_NAME=$(basename "$LATEST")
     info "Downloading: $IMG_NAME"
 
-    $SCP_CMD -q "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$LATEST" "$SCRIPT_DIR/$IMG_NAME"
+    scp_remote -q "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$LATEST" "$SCRIPT_DIR/../$IMG_NAME"
 
     info ""
     info "═════════════════════════════════════════════"
     info "✅ BUILD COMPLETE"
     info "═════════════════════════════════════════════"
-    info "Image: $SCRIPT_DIR/$IMG_NAME"
-    if [ -f "$SCRIPT_DIR/$IMG_NAME" ]; then
-        SIZE=$(du -h "$SCRIPT_DIR/$IMG_NAME" | cut -f1)
-        MD5=$(md5sum "$SCRIPT_DIR/$IMG_NAME" | cut -d' ' -f1)
+    info "Image: $SCRIPT_DIR/../$IMG_NAME"
+    if [ -f "$SCRIPT_DIR/../$IMG_NAME" ]; then
+        SIZE=$(du -h "$SCRIPT_DIR/../$IMG_NAME" | cut -f1)
+        MD5=$(md5sum "$SCRIPT_DIR/../$IMG_NAME" | cut -d' ' -f1)
         info "Size: $SIZE"
         info "MD5:  $MD5"
     fi
@@ -310,7 +343,7 @@ EOF_SETUP
     info "Root: password set (interactive login)"
     info ""
     info "Next: Build eMMC update for RKDevTool"
-    info "  ./build-emmc-release.sh --armbian $SCRIPT_DIR/$IMG_NAME --version 1.0.0"
+    info "  ./build-emmc-release.sh --armbian $SCRIPT_DIR/../$IMG_NAME --version 1.0.0"
     info ""
     return 0
 }
