@@ -20,6 +20,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/config.env"
+PATCH_FILE="$SCRIPT_DIR/patches/0001-arm64-dts-rockchip-add-rk3308bs-evb-amic-v11.patch"
+DTS_FILE="$SCRIPT_DIR/dts/rk3308bs-evb-amic-v11.dts"
 
 # ── Colors ────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -35,8 +37,8 @@ fi
 
 source "$CONFIG_FILE"
 
-# Allow override from environment
-BUILD_TYPE="${BUILD_SERVER:-remote}"  # "remote" or "local"
+# remote = SSH to BUILD_SERVER_HOST; local = WSL/native armbian-build tree
+BUILD_TYPE="${BUILD_SERVER:-remote}"
 
 info "═════════════════════════════════════════════"
 info "RK3308BS EVB Armbian Build"
@@ -52,26 +54,59 @@ info ""
 # ── Verify local files ────────────────────────────────────────────────────
 for f in \
     "$SCRIPT_DIR/rk3308bs-evb.conf" \
-    "$SCRIPT_DIR/0001-arm64-dts-rockchip-add-rk3308bs-evb-amic-v11.patch" \
-    "$SCRIPT_DIR/rk3308bs-evb-amic-v11.dts"; do
+    "$PATCH_FILE" \
+    "$DTS_FILE"; do
     if [ ! -f "$f" ]; then
         error "Missing: $(basename $f)"
     fi
 done
 
-case "$BUILD_TYPE" in
-    remote)
-        step "REMOTE BUILD: $BUILD_SERVER_HOST"
-        _build_remote
-        ;;
-    local)
-        step "LOCAL BUILD"
-        _build_local
-        ;;
-    *)
-        error "Unknown BUILD_SERVER: $BUILD_TYPE (use 'remote' or 'local')"
-        ;;
-esac
+_install_userpatches() {
+    local BUILD_PATH="$1"
+
+    cp "$SCRIPT_DIR/rk3308bs-evb.conf" "$BUILD_PATH/config/boards/rk3308bs-evb.conf"
+    sed -i 's/\r$//' "$BUILD_PATH/config/boards/rk3308bs-evb.conf"
+
+    mkdir -p "$BUILD_PATH/userpatches/kernel/rockchip64-current"
+    cp "$PATCH_FILE" "$BUILD_PATH/userpatches/kernel/rockchip64-current/0001-add-rk3308bs-evb.patch"
+    sed -i 's/\r$//' "$BUILD_PATH/userpatches/kernel/rockchip64-current/"*.patch
+
+    mkdir -p "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant"
+    cat > "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf" <<EOF
+ctrl_interface=/var/run/wpa_supplicant
+update_config=1
+
+network={
+    ssid="$WIFI_SSID"
+    psk="$WIFI_PASSWORD"
+    key_mgmt=WPA-PSK
+    priority=100
+}
+EOF
+    chmod 600 "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf"
+
+    mkdir -p "$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d"
+    cat > "$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password" <<EOF
+#!/bin/bash
+echo "root:$ROOT_PASSWORD" | chpasswd -c SHA512
+echo "[rootfs] Root password configured"
+EOF
+    chmod +x "$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password"
+
+    if [ -d "$SCRIPT_DIR/overlay-user" ]; then
+        cp -a "$SCRIPT_DIR/overlay-user/." "$BUILD_PATH/userpatches/overlay-user/"
+    fi
+    if [ -f "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" ]; then
+        cp "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
+            "$BUILD_PATH/config/20-rk3308bs-hardware.sh"
+        chmod +x "$BUILD_PATH/config/20-rk3308bs-hardware.sh"
+    fi
+    if [ -f "$SCRIPT_DIR/userpatches-customize-image.sh" ]; then
+        cp "$SCRIPT_DIR/userpatches-customize-image.sh" \
+            "$BUILD_PATH/userpatches/customize-image.sh"
+        chmod +x "$BUILD_PATH/userpatches/customize-image.sh"
+    fi
+}
 
 # ==================== REMOTE BUILD ==========================================
 
@@ -83,7 +118,8 @@ _build_remote() {
     
     # Test SSH connection
     if ! $SSH_CMD true 2>/dev/null; then
-        error "Cannot connect to $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
+        warn "Cannot connect to $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
+        return 1
     fi
     info "✓ SSH connection OK"
 
@@ -120,16 +156,22 @@ EOF_INIT_REPO
     info "Uploading configuration..."
     scp -q "$SCRIPT_DIR/rk3308bs-evb.conf" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_board.conf"
-    scp -q "$SCRIPT_DIR/0001-arm64-dts-rockchip-add-rk3308bs-evb-amic-v11.patch" \
+    scp -q "$PATCH_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_kernel.patch"
-    scp -q "$SCRIPT_DIR/rk3308bs-evb-amic-v11.dts" \
+    scp -q "$DTS_FILE" \
         "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_device.dts"
     if [ -d "$SCRIPT_DIR/overlay-user" ]; then
         scp -rq "$SCRIPT_DIR/overlay-user/" \
             "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_overlay-user/"
     fi
-
-    # Setup WiFi and root password via remote script
+    if [ -f "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" ]; then
+        scp -q "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
+            "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_hardware-chroot.sh"
+    fi
+    if [ -f "$SCRIPT_DIR/userpatches-customize-image.sh" ]; then
+        scp -q "$SCRIPT_DIR/userpatches-customize-image.sh" \
+            "$BUILD_SERVER_USER@$BUILD_SERVER_HOST:$SSH_PATH/_customize-image.sh"
+    fi
     info "Configuring WiFi and root password..."
     $SSH_CMD 'bash -s' <<EOF_SETUP
 #!/bin/bash
@@ -198,6 +240,16 @@ if [ -d "\$BUILD_PATH/_overlay-user" ]; then
     cp -a "\$BUILD_PATH/_overlay-user/." "\$BUILD_PATH/userpatches/overlay-user/"
 fi
 
+# Board hardware userland (WiFi tools, ttyFIQ0 getty, etc.)
+if [ -f "\$BUILD_PATH/_hardware-chroot.sh" ]; then
+    cp "\$BUILD_PATH/_hardware-chroot.sh" "\$BUILD_PATH/config/20-rk3308bs-hardware.sh"
+    chmod +x "\$BUILD_PATH/config/20-rk3308bs-hardware.sh"
+fi
+if [ -f "\$BUILD_PATH/_customize-image.sh" ]; then
+    cp "\$BUILD_PATH/_customize-image.sh" "\$BUILD_PATH/userpatches/customize-image.sh"
+    chmod +x "\$BUILD_PATH/userpatches/customize-image.sh"
+fi
+
 echo "✓ Configuration ready"
 EOF_SETUP
 
@@ -250,81 +302,84 @@ EOF_SETUP
     info "WiFi: SSID=$WIFI_SSID"
     info "Root: password set (interactive login)"
     info ""
-    info "Next: Flash to microSD"
-    info "  Windows: balenaEtcher or SharpAdbHelper + USB reader"
-    info "  Linux:   dd if=$IMG_NAME of=/dev/sdX bs=4M status=progress"
+    info "Next: Build eMMC update for RKDevTool"
+    info "  ./build-emmc-release.sh --armbian $SCRIPT_DIR/$IMG_NAME --version 1.0.0"
     info ""
+    return 0
 }
 
 # ==================== LOCAL BUILD ==========================================
 
+_ensure_armbian_repo() {
+    local BUILD_PATH="$1"
+    if [ ! -f "$BUILD_PATH/compile.sh" ]; then
+        info "Cloning Armbian build framework (first time only)..."
+        git clone --depth=1 --branch main https://github.com/armbian/build.git "$BUILD_PATH"
+    fi
+}
+
 _build_local() {
     ARMBIAN_PATH="${ARMBIAN_PATH:-$HOME/armbian-build}"
-
-    if [ ! -f "$ARMBIAN_PATH/compile.sh" ]; then
-        error "Armbian not found at: $ARMBIAN_PATH"
-        echo ""
-        echo "Clone it first:"
-        echo "  git clone --depth=1 https://github.com/armbian/build \\"
-        echo "    $ARMBIAN_PATH"
-    fi
-
+    _ensure_armbian_repo "$ARMBIAN_PATH"
     info "Armbian path: $ARMBIAN_PATH"
 
-    # Install board config
-    info "Installing board configuration..."
-    cp "$SCRIPT_DIR/rk3308bs-evb.conf" "$ARMBIAN_PATH/config/boards/rk3308bs-evb.conf"
-    sed -i 's/\r$//' "$ARMBIAN_PATH/config/boards/rk3308bs-evb.conf"
+    info "Installing board config, DTS patch, overlays..."
+    _install_userpatches "$ARMBIAN_PATH"
 
-    # Install kernel patch
-    info "Installing kernel patch..."
-    mkdir -p "$ARMBIAN_PATH/userpatches/kernel/rockchip64-current"
-    cp "$SCRIPT_DIR/0001-arm64-dts-rockchip-add-rk3308bs-evb-amic-v11.patch" \
-        "$ARMBIAN_PATH/userpatches/kernel/rockchip64-current/"
-    sed -i 's/\r$//' "$ARMBIAN_PATH/userpatches/kernel/rockchip64-current/"*.patch
-
-    # WiFi config
-    info "Configuring WiFi..."
-    mkdir -p "$ARMBIAN_PATH/userpatches/overlay-user/etc/wpa_supplicant"
-    cat > "$ARMBIAN_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf" <<EOF
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
-
-network={
-    ssid="$WIFI_SSID"
-    psk="$WIFI_PASSWORD"
-    key_mgmt=WPA-PSK
-    priority=100
-}
-EOF
-    chmod 600 "$ARMBIAN_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf"
-
-    # Root password script
-    info "Configuring root password..."
-    mkdir -p "$ARMBIAN_PATH/userpatches/chroot-services-rk3308bs-evb.d"
-    cat > "$ARMBIAN_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password" <<'EOF'
-#!/bin/bash
-echo "root:$ROOT_PASSWORD" | chpasswd -c SHA512
-EOF
-
-    sed -i "s|\\\$ROOT_PASSWORD|$ROOT_PASSWORD|g" \
-        "$ARMBIAN_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password"
-    chmod +x "$ARMBIAN_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password"
-
-    step "Starting build..."
+    step "Starting Armbian compile.sh (20-90 min first run)..."
     cd "$ARMBIAN_PATH"
 
     ./compile.sh \
         BOARD=rk3308bs-evb \
-        BRANCH=current \
-        RELEASE=jammy \
+        BRANCH="${KERNEL_BRANCH:-current}" \
+        RELEASE="${RELEASE:-bookworm}" \
+        BUILD_MINIMAL=yes \
         EXPERT=yes \
         PREFER_DOCKER=no \
-        COMPRESS_OUTPUTIMAGE=yes \
         "$@"
 
+    LATEST="$(ls -t "$ARMBIAN_PATH/output/images/"*.img 2>/dev/null | head -1 || true)"
+    if [ -z "$LATEST" ]; then
+        LATEST="$(ls -t "$ARMBIAN_PATH/output/images/"*.img.xz 2>/dev/null | head -1 || true)"
+    fi
+    [ -n "$LATEST" ] || error "No output image in $ARMBIAN_PATH/output/images/"
+
+    OUT_PARENT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    IMG_NAME="$(basename "$LATEST")"
+    if [[ "$LATEST" == *.xz ]]; then
+        info "Decompressing $IMG_NAME ..."
+        cp "$LATEST" "$OUT_PARENT/"
+        xz -dkf "$OUT_PARENT/$IMG_NAME"
+        IMG_NAME="${IMG_NAME%.xz}"
+    else
+        cp "$LATEST" "$OUT_PARENT/$IMG_NAME"
+    fi
+
     info ""
-    info "✅ Build complete!"
-    info "Output: $ARMBIAN_PATH/output/images/"
+    info "═════════════════════════════════════════════"
+    info "BUILD COMPLETE (from Armbian source)"
+    info "═════════════════════════════════════════════"
+    info "Image: $OUT_PARENT/$IMG_NAME"
+    info "Size:  $(du -h "$OUT_PARENT/$IMG_NAME" | cut -f1)"
+    info ""
+    info "Next: ./build-emmc-release.sh --armbian \"$OUT_PARENT/$IMG_NAME\" --version 1.0.0"
+    info ""
 }
 
+case "$BUILD_TYPE" in
+    remote)
+        step "REMOTE BUILD: $BUILD_SERVER_HOST"
+        if ! _build_remote; then
+            warn "Remote build failed — falling back to local WSL build"
+            step "LOCAL BUILD (fallback)"
+            _build_local
+        fi
+        ;;
+    local)
+        step "LOCAL BUILD"
+        _build_local
+        ;;
+    *)
+        error "Unknown BUILD_SERVER: $BUILD_TYPE (use 'remote' or 'local')"
+        ;;
+esac
