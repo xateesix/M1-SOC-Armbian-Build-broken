@@ -30,40 +30,40 @@ diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_therm
 index 111111111111..222222222222 100644
 --- a/drivers/thermal/rockchip_thermal.c
 +++ b/drivers/thermal/rockchip_thermal.c
-@@ -64,6 +64,8 @@ struct chip_tsadc_table {
-  unsigned int length;
-  u32 data_mask;
-  enum adc_sort_mode mode;
-+ int kNum;
-+ int bNum;
+@@ -62,6 +62,8 @@ struct chip_tsadc_table {
+ 	unsigned int length;
+ 	u32 data_mask;
+ 	enum adc_sort_mode mode;
++	int kNum;
++	int bNum;
  };
  
  /**
-@@ -581,6 +583,9 @@ static u32 rk_tsadcv2_temp_to_code(const struct chip_tsadc_table *table,
-  unsigned int denom;
-  u32 error = table->data_mask;
+@@ -577,6 +579,9 @@ static u32 rk_tsadcv2_temp_to_code(const struct chip_tsadc_table *table,
+ 	unsigned int denom;
+ 	u32 error = table->data_mask;
  
-+ if (table->kNum)
-+  return DIV_ROUND_UP(temp / 100 * table->kNum, 10000) + table->bNum;
++	if (table->kNum)
++		return DIV_ROUND_UP(temp / 100 * table->kNum, 10000) + table->bNum;
 +
-  low = 0;
-  high = (table->length - 1) - 1; /* ignore the last check for table */
-  mid = (high + low) / 2;
-@@ -634,6 +639,14 @@ static int rk_tsadcv2_code_to_temp(const struct chip_tsadc_table *table,
-  unsigned int mid = (low + high) / 2;
-  unsigned int num;
-  unsigned long denom;
+ 	low = 0;
+ 	high = (table->length - 1) - 1; /* ignore the last check for table */
+ 	mid = (high + low) / 2;
+@@ -629,6 +634,13 @@ static int rk_tsadcv2_code_to_temp(const struct chip_tsadc_table *table,
+ 	unsigned int mid = (low + high) / 2;
+ 	unsigned int num;
+ 	unsigned long denom;
 +
-+ if (table->kNum) {
-+  *temp = (((int)code - table->bNum) * 10000 / table->kNum) * 100;
-+  if (*temp < MIN_TEMP || *temp > MAX_TEMP)
-+   return -EAGAIN;
-+  return 0;
-+ }
++	if (table->kNum) {
++		*temp = (((int)code - table->bNum) * 10000 / table->kNum) * 100;
++		if (*temp < MIN_TEMP || *temp > MAX_TEMP)
++			return -EAGAIN;
++		return 0;
++	}
  
-  WARN_ON(table->length < 2);
+ 	WARN_ON(table->length < 2);
  
-@@ -1120,6 +1133,28 @@ static const struct rockchip_tsadc_chip rk3308_tsadc_data = {
+@@ -1101,6 +1114,28 @@ static const struct rockchip_tsadc_chip rk3308_tsadc_data = {
  	},
  };
  
@@ -92,7 +92,7 @@ index 111111111111..222222222222 100644
  static const struct rockchip_tsadc_chip px30_tsadc_data = {
  	/* cpu, gpu */
  	.chn_offset = 0,
-@@ -1415,6 +1450,10 @@ static const struct of_device_id of_rockchip_thermal_match[] = {
+@@ -1393,6 +1428,10 @@ static const struct of_device_id of_rockchip_thermal_match[] = {
  		.compatible = "rockchip,rk3308-tsadc",
  		.data = (void *)&rk3308_tsadc_data,
  	},
