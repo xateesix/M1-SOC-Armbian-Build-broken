@@ -1,0 +1,322 @@
+# RK3308BS — RKDevTool flash guide (Artillery M1 Pro S1-SOC)
+
+## Use Upgrade Firmware + monolithic `.img` (factory workflow)
+
+This is the **correct** workflow — the same one that worked on **June 4** with the factory image.
+
+1. Enter **MASKROM** (recovery button / maskrom pads + USB).
+2. Open **RKDevTool v2.86** from this repo folder.
+3. Tab: **Upgrade Firmware** (second tab).
+4. **Firmware:** browse to a single monolithic `.img` file (see table below).
+   - Do **not** load a custom `config.cfg` with separate partition files.
+   - Do **not** use **Advanced → Write by address**.
+5. Click **Upgrade** / **Run**.
+6. Watch the log — you **must** see:
+   - `Download Boot Success`
+   - `Download IDB Success`
+   - `Download Firmware Start` with **`Gpt=1`**
+   - `Start to download rootfs, offset=0x...` (multi-minute write for large images)
+   - `Download Firmware Success` (ret=0, not `ret=1`)
+7. Unplug USB, power cycle.
+
+If **Download Boot** fails to start, then (and only then):
+
+- **Advanced** → Download Loader → `factory_fresh/03_partitions/MiniLoaderAll.bin`
+- Immediately repeat step 5 on **Upgrade Firmware** with the **full** `.img`.
+
+---
+
+## Factory reference image
+
+Known-good monolithic package (use for recovery and as packaging reference):
+
+```
+KLP_IMG_ARTILLERY_M1_PRO_S1-SOC_20251126_Beta (1)/KLP_IMG_ARTILLERY_M1_PRO_S1-SOC_20251126_Beta.img
+```
+
+Unpacked structure matches our repacks:
+
+| Component | Factory | Our repacks |
+|-----------|---------|-------------|
+| `boot.bin` (MiniLoader) | 321870 bytes | **identical** |
+| `package-file` layout | standard Rockchip | **identical** |
+| `parameter.txt` | `TYPE: GPT`, `MAGIC: 0x5041524B` | same format |
+| RKImageMaker wrap | `-RK3308` + `-os_type:androidos` | same (`windows-pack-update.ps1`) |
+
+If factory `.img` works on Upgrade but a custom `.img` does not, the problem is **not** the tab — check the log for the failure patterns below.
+
+---
+
+## Images
+
+| File | When to use |
+|------|-------------|
+| `KLP_IMG_ARTILLERY_..._Beta.img` | **Recovery** — known-good factory |
+| `SMOKE_v2_repack_only.img` | Validate repack pipeline (factory contents) |
+| `rk3308bs-1.0.0-emmc-fixed.img` | Custom Armbian (**same as v12** — use this or `-v12.img`) |
+| `rk3308bs-1.0.0-emmc-fixed-v12.img` | **Latest** — v11 serial + **no thermal emergency reboot** (soc-crit passive) |
+| `rk3308bs-1.0.0-emmc-fixed-v11.img` | Factory DTB + ttyS3 serial — **still thermal reboot loop on 6.18** |
+
+**Do not use an old `-emmc-fixed.img` from before 2026-06-11** — those had a broken `boot.img` header (resource.img in wrong slot → U-Boot PXE/`=>` prompt).
+
+Factory GPT layout (reference):
+
+| # | LBA | Size | Name |
+|---|-----|------|------|
+| 1 | 0x2000 | 0x1000 | uboot |
+| 2 | 0x3000 | 0x1000 | trust |
+| 3 | 0x4000 | 0x800 | misc |
+| 4 | 0x4800 | 0xa000 | recovery |
+| 5 | 0xe800 | 0x4800 | boot (9 MB factory) |
+| 6 | 0x13000 | grow | rootfs |
+
+The `-fixed` Armbian image expands boot to **17 MB** (`0x8a00`) and moves rootfs to `0x17200` — required for Armbian 6.18 `boot.img`. Upgrade with `Gpt=1` rebuilds GPT from `parameter.txt` inside the package.
+
+---
+
+## Working flash log (June 4 — factory, Upgrade tab)
+
+```
+Download Boot Success
+Download IDB Success
+Download Firmware Start
+  Gpt=1, DirectLBA=1
+  Start to download trust, offset=0x3000
+  Start to download uboot, offset=0x2000
+  Start to download boot,   offset=0xe800
+  Start to download rootfs, offset=0x13000   ← ~5 GB, several minutes
+  Start to download recovery, offset=0x4800
+  Start to download misc, offset=0x4000
+Download Firmware Success
+Reset Device Success
+```
+
+---
+
+## Broken flash patterns (June 9 — do NOT do this)
+
+### Pattern A — Write by address / custom config
+
+```
+Download parameter at 0x00000000 ...     ← destroys GPT at LBA 0
+RunProc is ending, ret=1
+ERROR: GetParameter_Loader->Check parameter tag failed!
+```
+
+Cause: **Advanced → Write by address**, or a `config.cfg` that lists `parameter`, `uboot`, `boot`, etc. as separate files instead of one monolithic `.img`.
+
+### Pattern B — partial partition list without Gpt=1
+
+```
+Download uboot at 0x00002000 ...
+Download trust at 0x00003000 ...
+Download boot at 0x0000e800 ...
+Download armbian-serial-soc at 0x00000000 ...   ← wrong item at LBA 0
+RunProc is ending, ret=1
+```
+
+Cause: custom config pointing at loose `.img`/`.bin` files (not the monolithic update package).
+
+### Pattern C — flash too fast
+
+Flash finishes in under ~30 seconds on a multi-GB image → only loader/IDB written, not full firmware.
+
+---
+
+## What each symptom means
+
+| Symptom | Cause |
+|---------|--------|
+| Instant MASKROM, no button | IDB / boot sectors corrupt (bad or partial flash) |
+| No partition table in MASKROM | GPT never created (`Gpt=1` path not run) |
+| U-Boot `=>` + pxelinux / PXE | Boot partition empty, **truncated boot.img**, or **broken boot.img header** |
+| `boot partition is not enough to save image!` | Use `rk3308bs-1.0.0-emmc-fixed.img` (17 MB boot slot) |
+
+---
+
+## Serial
+
+After successful Armbian flash: **UART3 @ 1500000**, console **ttyS3**.
+
+Verify:
+
+```bash
+cat /etc/rk3308bs-release
+```
+
+---
+
+## PXE / `=>` prompt after Armbian flash (troubleshooting)
+
+That output means **U-Boot never started the kernel** — it is not a rootfs issue yet.
+
+### If you see MASKROM loader output (`Code check error -1`, `tag:LOADER error`)
+
+**Cause:** `rk3308bs-1.0.0-emmc-fixed-v4.img` patched `uboot.img` and broke Rockchip's hash check. **Do not use v4.**
+
+**Recovery:**
+
+1. MASKROM → flash **factory** `KLP_IMG_ARTILLERY_..._Beta.img` (full ~5 GB)
+2. Then flash **`rk3308bs-1.0.0-emmc-fixed-v11.img`** (or `rk3308bs-1.0.0-emmc-fixed.img` — same as v11)
+
+### `Invalid DTB hash !` / `No valid DTB, ret=-22`
+
+**Cause:** Custom `rk-kernel.dtb` was injected into `resource.img` without updating the RSCE SHA1 entry. U-Boot (`CONFIG_ROCKCHIP_DTB_VERIFY`) rejects the DTB before loading the kernel.
+
+**Fix:** Use **`rk3308bs-1.0.0-emmc-fixed-v6.img`** or newer. v6 rebuilds `boot.img` with correct DTB hash + size in `resource.img`.
+
+Serial symptom (v5 and earlier):
+
+```
+DTB: rk-kernel.dtb
+HASH(c): error
+Invalid DTB hash !
+Failed to load android image
+```
+
+After v6+ you should see `HASH(c): OK`. If boot then **loops** with overlap/`overwritten` errors, flash **v7** (see below).
+
+### Boot loop: kernel overlaps FDT (`Sysmem Error` / `image overwritten`)
+
+**Cause:** Armbian 6.18 decompresses to ~40 MiB starting at `0x00280000`, but factory U-Boot places the FDT at `fdt_addr_r=0x01f00000` (~31 MiB). The kernel clobbers the device tree → U-Boot resets → loop.
+
+Serial symptom (v6):
+
+```
+HASH(c): OK
+Booting LZ4 kernel at 0x02480000(Uncompress to 0x00280000) with fdt at 0x01f00000
+Sysmem Error: "UNCOMP_KERNEL" ... overlap with existence "FDT" (0x01f00000 ...)
+ERROR: new format image overwritten - must RESET the board to recover
+```
+
+**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v7.img`** (v6 boot + patched `uboot.img` memory map **with corrected LOADER hash**). v4 had the same env patch but a broken hash (`Code check error -1`); v7 adds the `hash_by_crypto` value the MiniLoader expects.
+
+Expected after v7:
+
+```
+HASH(c): OK
+... with fdt at 0x05000000
+Starting kernel ...
+```
+
+### Kernel panic: `Unable to mount root fs on unknown-block(0,0)`
+
+**Cause:** Rockchip U-Boot passes **`/chosen/bootargs` from the DTB** to Linux, not the `boot.img` header cmdline. Custom DTB only had `console=` — no `root=PARTUUID=...` — so the kernel panics even though boot succeeds.
+
+Serial symptom (v7):
+
+```
+Kernel command line: ... console=ttyS3,1500000n8
+VFS: Cannot open root device "" or unknown-block(0,0)
+Kernel panic - not syncing: VFS: Unable to mount root fs
+```
+
+Partition list shows rootfs at **`mmcblk0p6`** / **`614e0000-0000-4b53-8000-1d28000054a9`** — the data is there; the kernel just wasn't told where to mount.
+
+**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v8.img`** (v7 + DTB `bootargs` with `root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait`).
+
+Expected after v8:
+
+```
+Kernel command line: ... root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait
+EXT4-fs (mmcblk0p6): mounted filesystem with ordered data mode
+```
+
+### Boot loop after “Welcome to Armbian” (`Temperature too high`)
+
+**Cause:** Custom DTB (v8) is missing the factory **`/otp`** node used to calibrate the TSADC. The sensor reads too hot → instant critical trip → `reboot: HARDWARE PROTECTION shutdown` → loop. v8 otherwise works (root mounts, systemd starts).
+
+Serial symptom:
+
+```
+Welcome to Armbian-unofficial 26.08.0-trunk bookworm!
+thermal thermal_zone1: soc-thermal: critical temperature reached
+reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+```
+
+**Fix (serial + root):** v8/v11 bootargs and ttyS3. **Thermal loop:** use **v12** (not v9 alone — factory OTP in DTB does not fix 6.18 TSADC trim).
+
+**Do not** run manual `saveenv` unless v7 still fails — v7+ bakes the memory layout into default env.
+
+### No serial output / boot loop (v9–v10)
+
+**Cause:** Factory DTB **disables** `serial@ff0d0000` and routes UART3 through **fiq-debugger** (`console=ttyFIQ0`). That works on factory kernel **5.10**, but **Armbian 6.18 does not ship fiq-debugger** — so neither `ttyFIQ0` nor `ttyS3` works after `earlycon`, and the serial port goes silent while the board keeps resetting (thermal/display activity may still occur).
+
+v8 had serial because the **custom DTB** enabled `serial@ff0d0000` + `console=ttyS3` (but lacked factory OTP → thermal loop).
+
+**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v11.img`** — factory DTB (OTP/thermal) with **fiq-debugger disabled**, **`serial@ff0d0000=okay`**, **`console=ttyS3,1500000n8`**. Same UART header @ **1500000**.
+
+**Note:** v11 serial works, but Armbian **6.18** still hits `soc-thermal: critical temperature reached` ~1 s after boot (factory `/otp` in DTB is not enough for mainline TSADC trim). See **v12** below.
+
+Expected after **v12**:
+
+```
+Kernel command line: ... console=ttyS3,1500000n8 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 ...
+Welcome to Armbian-unofficial ...
+rk3308bs login:
+```
+
+### Thermal reboot ~1 s after boot (v8, v11)
+
+**Cause:** TSADC reads too hot without mainline OTP trim → instant **critical** trip → `reboot: HARDWARE PROTECTION shutdown (Temperature too high)` → looks like a very fast boot loop. Serial **does** work on v11 (full dmesg through USB/MMC init, then reboot at ~1 s).
+
+```
+thermal_sys: No trip points found for tsadc id=1
+thermal thermal_zone0: soc-thermal: critical temperature reached
+reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+```
+
+v8 reached `Welcome to Armbian` first (custom DTB, no factory OTP) then the same thermal shutdown. v9–v11 kept factory OTP in DTB but **6.18** still reboots early.
+
+**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v12.img`** — same as v11 (factory DTB + ttyS3) but **`soc-crit` downgraded to passive** so Linux does not emergency-reboot. (Proper OTP trim for accurate readings is still TODO.)
+
+### Armbian 6.18 kernel + factory U-Boot memory layout (manual fallback)
+
+Factory `uboot.img` only leaves ~25 MiB for a decompressed kernel (`kernel_addr_r=0x00680000`, `fdt_addr_r=0x01f00000`). Armbian 6.18 is larger → `boot_android` fails → PXE/`=>`.
+
+**Manual fallback only** (v5/v6 at `=>` with `bootdelay` > 0). v7 should not need this:
+
+```
+setenv fdt_addr_r 0x05000000
+setenv kernel_addr_r 0x02080000
+setenv kernel_addr_c 0x08000000
+saveenv
+reset
+```
+
+If `saveenv` succeeds, the next boot should load the kernel (watch for Linux messages, not PXE).
+
+### Checklist (normal flash path)
+
+1. **Factory recovery first** — flash `KLP_IMG_ARTILLERY_..._Beta.img` (full ~5 GB, `rootfs @ 0x13000`). Confirm the board boots factory again.
+
+2. **Flash the fixed Armbian image** — **`rk3308bs-1.0.0-emmc-fixed-v12.img`** (v7 uboot + v12 boot: factory DTB + ttyS3 + no thermal emergency reboot).  
+   **Never** use `-v4.img` (patched uboot **without** hash fix — bricks at loader).
+
+3. **Read the RKDevTool log** — both lines are required:
+   ```
+   Start to download boot, offset=0xe800, size=18040832
+   Start to download rootfs, offset=0x17200, size=1647312896
+   ```
+   If `rootfs` is missing (log shows `total=33613312` only), the rootfs partition is empty — see **Option B** in the main guide (Advanced → write `rootfs.img` at **`0x17200`**).
+
+4. **At the U-Boot `=>` prompt** (optional diagnosis):
+   ```
+   mmc dev 0
+   mmc part
+   ```
+   Boot partition must be **~17 MiB** (not 9 MiB). If it still shows 9 MiB, parameter/GPT did not update — redo step 1, then step 2.
+
+### Why this happens
+
+| Cause | What happened |
+|-------|----------------|
+| `Invalid DTB hash` | Custom DTB in `resource.img` without RSCE SHA1 update (fixed in v6+) |
+| Boot loop / `image overwritten` | Kernel decompress overlaps FDT at `0x01f00000` (fixed in v7 uboot env + hash) |
+| Kernel panic `unknown-block(0,0)` | DTB missing `root=PARTUUID=...` in `/chosen/bootargs` (fixed in v8+) |
+| Thermal reboot (~1 s or after banner) | TSADC uncalibrated on Armbian 6.18; factory OTP in DTB not enough (workaround: v12 passive soc-crit) |
+| Silent serial / boot loop on v9–v10 | Factory DTB disables UART3 unless fiq-debugger works (Armbian 6.18 has none) — fixed in v11 |
+| `Code check error -1` | Patched uboot without LOADER hash update (v4; fixed in v7) |
+| Old `-emmc-fixed.img` | `boot.img` had `resource.img` in ramdisk slot instead of second slot → U-Boot rejects it |
+| Partial flash (`total=33613312`) | Boot written but rootfs skipped; GPT may not match |
+| 9 MiB boot slot + 17 MiB boot.img | U-Boot reads truncated image → same PXE symptom |

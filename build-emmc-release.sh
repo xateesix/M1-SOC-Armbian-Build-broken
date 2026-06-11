@@ -12,7 +12,8 @@
 #   --version VER      release version string (required)
 #   --factory DIR      bootloader blobs (default: factory_fresh/03_partitions)
 #   --shrink           shrink rootfs before pack (recommended)
-#   --skip-modules     do not extract/inject factory WiFi modules
+#   --skip-modules     Phase A only: extract/inject factory 8189fs.ko
+#   --factory-kernel   Phase A boot (factory boot.img + factory WiFi module)
 #   --pack-only        skip windows pack (staging only)
 set -euo pipefail
 
@@ -21,7 +22,8 @@ ARMBIAN_IMG=""
 VERSION=""
 FACTORY_DIR="$SCRIPT_DIR/factory_fresh/03_partitions"
 SHRINK=1
-SKIP_MODULES=0
+SKIP_MODULES=1
+BOOT_MODE="armbian"
 PACK_ONLY=0
 
 usage() {
@@ -39,6 +41,7 @@ while [[ $# -gt 0 ]]; do
         --shrink) SHRINK=1; shift ;;
         --no-shrink) SHRINK=0; shift ;;
         --skip-modules) SKIP_MODULES=1; shift ;;
+        --factory-kernel) BOOT_MODE="factory"; SKIP_MODULES=0; shift ;;
         --pack-only) PACK_ONLY=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown: $1"; usage; exit 1 ;;
@@ -48,6 +51,13 @@ done
 [[ -n "$ARMBIAN_IMG" && -n "$VERSION" ]] || { usage; exit 1; }
 [[ -f "$ARMBIAN_IMG" ]] || { echo "Missing: $ARMBIAN_IMG"; exit 1; }
 
+if ! sudo -n true 2>/dev/null; then
+    echo "ERROR: This script needs WSL sudo (loop mounts). Run in an interactive WSL shell:"
+    echo "  sudo -v"
+    echo "  $0 --armbian \"$ARMBIAN_IMG\" --version \"$VERSION\""
+    exit 1
+fi
+
 OUT_DIR="$SCRIPT_DIR/releases/$VERSION"
 PACK_INPUT="$OUT_DIR/pack_input"
 OUTPUT_IMG="rk3308bs-${VERSION}-emmc.img"
@@ -56,11 +66,14 @@ echo "=== RK3308BS eMMC release $VERSION ==="
 echo "Armbian: $ARMBIAN_IMG"
 echo "Factory: $FACTORY_DIR"
 echo "Out:     $OUT_DIR"
+echo "Boot:    Phase ${BOOT_MODE} (armbian = custom kernel boot.img)"
 echo ""
 
 if [[ "$SKIP_MODULES" != "1" ]]; then
-    if [[ ! -f "$SCRIPT_DIR/bsp/modules-factory/KERNEL_VERSION" ]]; then
+    KV="$SCRIPT_DIR/bsp/modules-factory/KERNEL_VERSION"
+    if [[ ! -f "$KV" ]] || ! grep -qE '^[0-9]+\.[0-9]+' "$KV" 2>/dev/null; then
         echo "=== Extract WiFi modules from factory rootfs (one-time per factory dump) ==="
+        rm -rf "$SCRIPT_DIR/bsp/modules-factory/"*
         bash "$SCRIPT_DIR/tools/extract-factory-modules.sh"
     fi
 fi
@@ -74,7 +87,7 @@ PACK_ARGS=(
 [[ "$SHRINK" == "1" ]] && PACK_ARGS+=(--shrink)
 [[ "$SKIP_MODULES" != "1" ]] && PACK_ARGS+=(--modules "$SCRIPT_DIR/bsp/modules-factory")
 
-bash "$SCRIPT_DIR/pack-armbian-for-emmc.sh" "${PACK_ARGS[@]}"
+bash "$SCRIPT_DIR/pack-armbian-for-emmc.sh" "${PACK_ARGS[@]}" --boot-mode "$BOOT_MODE"
 
 if [[ "$PACK_ONLY" == "1" ]]; then
     echo "Pack-only done. Run windows-pack-update.ps1 manually."

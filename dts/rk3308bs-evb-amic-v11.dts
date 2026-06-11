@@ -59,6 +59,7 @@
 		 * normal serial (this stdout) and USB OTG mode.
 		 */
 		stdout-path = "serial3:1500000n8";
+		bootargs = "earlycon=uart8250,mmio32,0xff0d0000 console=ttyS3,1500000n8 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait";
 	};
 
 	memory@0 {
@@ -242,7 +243,7 @@
 
 		port {
 			panel_in_rgb: endpoint {
-				remote-endpoint = <&rgb_out_panel>;
+				remote-endpoint = <&vop_out_rgb>;
 			};
 		};
 	};
@@ -414,78 +415,64 @@
 	status = "okay";
 };
 
-/* ── Display engine (VOP) ─────────────────────────────────────────────── */
+/* ── Display: VOP → RGB panel (kernel 6.18: no separate rgb bridge node) ─ */
 &vop {
-	status = "okay";
-};
-
-/*
- * ── RGB output bridge ─────────────────────────────────────────────────
- * Connects VOP → RGB bridge → panel.
- * pinctrl selects RGB-888 mux: m0 = GPIO Bank1 data pins (check your PCB).
- * If only 18-bit (RGB666) is wired, change lcdc_rgb888_m0 to the 666 variant.
- *
- * NOTE: The exact label of "rgb_out" inside &rgb may differ between kernel
- * versions (some use &rgb_out, some use an endpoint inside port@1).
- * Verify with: grep -r "rgb_out\|rgb@" <kernel>/arch/arm64/boot/dts/rockchip/rk3308.dtsi
- */
-&rgb {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&lcdc_ctl>, <&lcdc_rgb888_m0>;
+
+	vop_out: port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		vop_out_rgb: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&panel_in_rgb>;
+		};
+	};
 };
 
-&rgb_out {
-	remote-endpoint = <&panel_in_rgb>;
-	/* DTS label alias so the panel port can reference back correctly. */
-};
-
-/* This satisfies the rgb_out_panel phandle used in panel port@0 above. */
-&rgb_out_panel {
-	remote-endpoint = <&rgb_in>;
-};
-
-/*
- * ── Internal RK3308 ACODEC (analog MIC + headphone + speaker) ──────────
- * micbias1 + micbias2 = both internal MIC bias circuits enabled.
- *
- * spk-ctl-gpios on GPIO0_A5 is COMMENTED OUT because that pin is also
- * used as the heartbeat LED. Enable it (and remove the led-user node
- * above) if you need speaker amp enable control.
- *
- * hp-ctl-gpios on GPIO0_A2 is COMMENTED OUT because that pin is used
- * by sdio_pwrseq for WiFi reset.
- */
-&acodec {
-	rockchip,no-deep-low-power;
-	rockchip,micbias1;
-	rockchip,micbias2;
-	/* spk-ctl-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_HIGH>; */
-	/* hp-ctl-gpios  = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>; */
+&display_subsystem {
 	status = "okay";
 };
 
 /*
- * Sound card for the internal ACODEC.
- * rockchip,cpu references the I2S interface at ff320000.
- * In rk3308.dtsi this is commonly labelled &i2s2 or &i2s_2ch_2.
- * Run: grep -n "ff320000" <kernel>/arch/arm64/boot/dts/rockchip/rk3308.dtsi
- * and adjust the label below to match.
+ * ── Internal RK3308 codec (analog MIC + headphone + speaker) ───────────
+ * spk-ctl-gpios on GPIO0_A5 and hp-ctl-gpios on GPIO0_A2 are omitted due to
+ * LED / WiFi GPIO conflicts (see header comments).
  */
-&i2s2 {
+&codec {
+	rockchip,no-deep-low-power;
+	rockchip,micbias1;
+	rockchip,micbias2;
+	status = "okay";
 	#sound-dai-cells = <0>;
+};
+
+&i2s_8ch_2 {
 	status = "okay";
 };
 
 / {
-	acodec_sound: acodec-sound {
-		compatible = "rockchip,multicodecs-card";
-		rockchip,card-name = "rockchip,rk3308-acodec";
-		rockchip,codec-hp-det;
-		rockchip,mclk-fs = <256>;
-		rockchip,cpu   = <&i2s2>;
-		rockchip,codec = <&acodec>;
-		status = "okay";
+	analog_sound: analog-sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "rockchip,rk3308-acodec";
+		simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,codec-hp-det;
+		simple-audio-card,widgets = "Headphone", "Headphones";
+
+		simple-audio-card,dai-link@0 {
+			format = "i2s";
+
+			cpu {
+				sound-dai = <&i2s_8ch_2>;
+			};
+
+			codec {
+				sound-dai = <&codec>;
+			};
+		};
 	};
 };
 

@@ -38,20 +38,33 @@ PY
 fi
 
 MODROOT="$WORKDIR/mnt/lib/modules"
-KVER="$(ls -1 "$MODROOT" 2>/dev/null | head -1 || true)"
-[[ -n "$KVER" ]] || { echo "No /lib/modules in factory rootfs"; exit 1; }
+KVER=""
+for d in "$MODROOT"/[0-9]*; do
+    [[ -d "$d" ]] || continue
+    KVER="$(basename "$d")"
+    break
+done
+if [[ -z "$KVER" ]]; then
+    found="$(find "$MODROOT" -name '8189fs.ko' 2>/dev/null | head -1 || true)"
+    if [[ -n "$found" ]]; then
+        KVER="$(basename "$(dirname "$found")")"
+        [[ "$KVER" == "extra" ]] && KVER="$(basename "$(dirname "$(dirname "$found")")")"
+    fi
+fi
+[[ -n "$KVER" ]] || KVER="5.10.160"
+[[ -d "$MODROOT/$KVER" ]] || { echo "No kernel module tree under $MODROOT/$KVER"; exit 1; }
 
 echo "Factory kernel modules tree: $KVER"
 rm -rf "$OUT"
 mkdir -p "$OUT/$KVER/extra"
 
 for name in 8189fs; do
-    found="$(find "$MODROOT/$KVER" -name "${name}.ko" 2>/dev/null | head -1 || true)"
+    found="$(find "$MODROOT" -name "${name}.ko" 2>/dev/null | head -1 || true)"
     if [[ -n "$found" ]]; then
         cp "$found" "$OUT/$KVER/extra/"
         echo "  copied $(basename "$found")"
     else
-        echo "  WARN: ${name}.ko not found under $MODROOT/$KVER"
+        echo "  WARN: ${name}.ko not found under $MODROOT"
     fi
 done
 

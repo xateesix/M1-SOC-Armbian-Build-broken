@@ -115,6 +115,9 @@ RELEASE=${RELEASE:-bookworm}
 BUILD_MINIMAL=yes
 EXPERT=yes
 PREFER_DOCKER=no
+BUILD_ONLY=default
+KERNEL_CONFIGURE=no
+NO_HOST_RELEASE_CHECK=yes
 EOF
     ln -sf config.conf "$BUILD_PATH/userpatches/config-default.conf"
 }
@@ -125,7 +128,7 @@ _build_remote() {
     SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new"
     PLINK="/mnt/c/Program Files/PuTTY/plink.exe"
     PSCP="/mnt/c/Program Files/PuTTY/pscp.exe"
-    REMOTE_PASS="${SSH_PASSWORD:-${SUDO_PASSWORD:-}}"
+    REMOTE_PASS="${SSH_PASSWORD:-${SUDO_PASSWORD:-${ROOT_PASSWORD:-}}}"
     USE_PLINK=0
     if [ -n "$REMOTE_PASS" ] && [ -f "$PLINK" ]; then
         USE_PLINK=1
@@ -148,10 +151,8 @@ _build_remote() {
             for a in "$@"; do
                 if [[ "$a" == *@*:* ]]; then
                     args+=("$a")
-                elif [[ -e "$a" ]] || [[ -d "$a" ]]; then
-                    args+=("$(wslpath -w "$a")")
                 else
-                    args+=("$a")
+                    args+=("$(wslpath -w "$a")")
                 fi
             done
             "$PSCP" -batch -pw "$REMOTE_PASS" "${args[@]}"
@@ -306,6 +307,9 @@ RELEASE=${RELEASE:-bookworm}
 BUILD_MINIMAL=yes
 EXPERT=yes
 PREFER_DOCKER=no
+BUILD_ONLY=default
+KERNEL_CONFIGURE=no
+NO_HOST_RELEASE_CHECK=yes
 CFG
 ln -sf config.conf "\$BUILD_PATH/userpatches/config-default.conf"
 
@@ -322,7 +326,7 @@ EOF_SETUP
     else
         COMPILE_WRAP="bash -c"
     fi
-    if ssh_remote "echo '$SUDO_PW' | sudo -S bash -c 'cd $SSH_PATH && env CI=true BUILD_ALL=yes timeout 180m ./compile.sh'" 2>&1 | tee build-remote.log; then
+    if ssh_remote "cd $SSH_PATH && echo '$SUDO_PW' | sudo -S -v && env CI=true BUILD_ALL=yes PREFER_DOCKER=no timeout 180m ./compile.sh default" 2>&1 | tee build-remote.log; then
         BUILD_OK=1
     else
         BUILD_OK=0
@@ -393,7 +397,7 @@ _build_local() {
     step "Starting Armbian compile.sh (20-90 min first run)..."
     cd "$ARMBIAN_PATH"
 
-    ./compile.sh \
+    ./compile.sh default \
         BOARD=rk3308bs-evb \
         BRANCH="${KERNEL_BRANCH:-current}" \
         RELEASE="${RELEASE:-bookworm}" \
