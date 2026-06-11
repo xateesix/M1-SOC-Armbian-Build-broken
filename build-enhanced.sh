@@ -107,6 +107,11 @@ EOF
             "$BUILD_PATH/config/20-rk3308bs-hardware.sh"
         chmod +x "$BUILD_PATH/config/20-rk3308bs-hardware.sh"
     fi
+    if [ -f "$SCRIPT_DIR/userpatches-chroot/25-rk3308bs-emmc-layout.sh" ]; then
+        cp "$SCRIPT_DIR/userpatches-chroot/25-rk3308bs-emmc-layout.sh" \
+            "$BUILD_PATH/config/25-rk3308bs-emmc-layout.sh"
+        chmod +x "$BUILD_PATH/config/25-rk3308bs-emmc-layout.sh"
+    fi
     if [ -f "$SCRIPT_DIR/userpatches-customize-image.sh" ]; then
         cp "$SCRIPT_DIR/userpatches-customize-image.sh" \
             "$BUILD_PATH/userpatches/customize-image.sh"

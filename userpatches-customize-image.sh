@@ -13,6 +13,14 @@ function rk3308bs_customize_rootfs() {
         chroot "${chroot_dir}" /bin/bash /tmp/rk3308bs-hw.sh
         rm -f "${chroot_dir}/tmp/rk3308bs-hw.sh" /tmp/rk3308bs-hw.sh
     fi
+
+    if [[ -f "${EXTER}/config/25-rk3308bs-emmc-layout.sh" ]]; then
+        cp "${EXTER}/config/25-rk3308bs-emmc-layout.sh" /tmp/rk3308bs-emmc.sh
+        chmod +x /tmp/rk3308bs-emmc.sh
+        cp /tmp/rk3308bs-emmc.sh "${chroot_dir}/tmp/rk3308bs-emmc.sh"
+        chroot "${chroot_dir}" /bin/bash /tmp/rk3308bs-emmc.sh
+        rm -f "${chroot_dir}/tmp/rk3308bs-emmc.sh" /tmp/rk3308bs-emmc.sh
+    fi
 }
 
 function customize_image() {

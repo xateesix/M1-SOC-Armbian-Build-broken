@@ -34,12 +34,22 @@ patch -p1 --forward < "$AB/patch/kernel/archive/rockchip64-6.18/rk3308-add-tsadc
 echo "=== Apply RK3308BS linear TSADC patch ==="
 patch -p1 --forward < "$REPO/patches/0002-thermal-rockchip-rk3308bs-tsadc.patch"
 
-echo "=== Configure (Armbian rockchip64-current) ==="
+echo "=== Configure (Armbian rockchip64-current + RK3308BS display) ==="
 cp "$AB/config/kernel/linux-rockchip64-current.config" .config
+"$SRC/scripts/kconfig/merge_config.sh" -m .config \
+  "$REPO/config/rk3308bs-display.fragment" \
+  "$REPO/config/rk3308bs-stable.fragment"
 make olddefconfig
 make Image -j"$JOBS"
 
-cp arch/arm64/boot/Image "$REL/_Image-v13"
-ls -la "$REL/_Image-v13"
-file "$REL/_Image-v13"
-echo "KERNEL_V13_OK"
+cp arch/arm64/boot/Image "$REL/_Image-v15"
+cp arch/arm64/boot/Image "$REL/_Image-v14"
+ls -la "$REL/_Image-v15"
+file "$REL/_Image-v15"
+# Verify built-in DRM (not modules)
+if ! "${CROSS_COMPILE}nm" -n arch/arm64/boot/vmlinux 2>/dev/null | grep -q ' rockchip_drm'; then
+  if ! strings arch/arm64/boot/Image | grep -q rockchip_drm; then
+    echo "WARN: rockchip_drm symbol not found in Image"
+  fi
+fi
+echo "KERNEL_V15_OK"

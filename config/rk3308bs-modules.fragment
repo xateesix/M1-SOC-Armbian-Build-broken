@@ -1,0 +1,11 @@
+# RK3308BS display as loadable modules (matches 6.18.0-dirty Image — not built-in).
+# Built-in DRM (display.fragment) triggers timer_list corruption on this board.
+CONFIG_DRM_ROCKCHIP=m
+CONFIG_ROCKCHIP_VOP=m
+CONFIG_ROCKCHIP_RGB=m
+CONFIG_DRM_PANEL_SIMPLE=m
+CONFIG_BACKLIGHT_PWM=m
+CONFIG_DRM_KMS_HELPER=m
+CONFIG_DRM_GEM_DMA_HELPER=m
+CONFIG_DRM_FBDEV_EMULATION=m
+CONFIG_FB=m

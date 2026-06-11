@@ -53,8 +53,10 @@ If factory `.img` works on Upgrade but a custom `.img` does not, the problem is 
 |------|-------------|
 | `KLP_IMG_ARTILLERY_..._Beta.img` | **Recovery** — known-good factory |
 | `SMOKE_v2_repack_only.img` | Validate repack pipeline (factory contents) |
-| `rk3308bs-1.0.0-emmc-fixed.img` | Custom Armbian (**same as v12** — use this or `-v12.img`) |
-| `rk3308bs-1.0.0-emmc-fixed-v12.img` | **Latest** — v11 serial + **no thermal emergency reboot** (soc-crit passive) |
+| `rk3308bs-1.0.0-emmc-fixed.img` | Custom Armbian (**same as v14** — use this or `-v14.img`) |
+| `rk3308bs-1.0.0-emmc-fixed-v14.img` | **Latest** — v13 thermal + **built-in DRM (LCD)** + **no GPT resize on first boot** (reboot-safe) |
+| `rk3308bs-1.0.0-emmc-fixed-v13.img` | v11 serial + factory RK3308BS TSADC — **do not use** (reboot breaks GPT; LCD blank) |
+| `rk3308bs-1.0.0-emmc-fixed-v12.img` | v11 serial + **no thermal emergency reboot** (soc-crit passive workaround) |
 | `rk3308bs-1.0.0-emmc-fixed-v11.img` | Factory DTB + ttyS3 serial — **still thermal reboot loop on 6.18** |
 
 **Do not use an old `-emmc-fixed.img` from before 2026-06-11** — those had a broken `boot.img` header (resource.img in wrong slot → U-Boot PXE/`=>` prompt).
@@ -234,7 +236,7 @@ thermal thermal_zone1: soc-thermal: critical temperature reached
 reboot: HARDWARE PROTECTION shutdown (Temperature too high)
 ```
 
-**Fix (serial + root):** v8/v11 bootargs and ttyS3. **Thermal loop:** use **v12** (not v9 alone — factory OTP in DTB does not fix 6.18 TSADC trim).
+**Fix (serial + root):** v8/v11 bootargs and ttyS3. **Thermal loop:** use **v13** (proper TSADC) or **v12** workaround (passive soc-crit).
 
 **Do not** run manual `saveenv` unless v7 still fails — v7+ bakes the memory layout into default env.
 
@@ -248,12 +250,19 @@ v8 had serial because the **custom DTB** enabled `serial@ff0d0000` + `console=tt
 
 **Note:** v11 serial works, but Armbian **6.18** still hits `soc-thermal: critical temperature reached` ~1 s after boot (factory `/otp` in DTB is not enough for mainline TSADC trim). See **v12** below.
 
-Expected after **v12**:
+Expected after **v13** (preferred) or **v12** (workaround):
 
 ```
 Kernel command line: ... console=ttyS3,1500000n8 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 ...
 Welcome to Armbian-unofficial ...
 rk3308bs login:
+```
+
+On **v13**, also check idle temperature is sane (not instant critical trip):
+
+```
+cat /sys/class/thermal/thermal_zone0/temp
+# expect ~30000–50000 (millidegrees C) at room temp
 ```
 
 ### Thermal reboot ~1 s after boot (v8, v11)
@@ -268,9 +277,9 @@ reboot: HARDWARE PROTECTION shutdown (Temperature too high)
 
 v8 reached `Welcome to Armbian` first (custom DTB, no factory OTP) then the same thermal shutdown. v9–v11 kept factory OTP in DTB but **6.18** still reboots early.
 
-**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v12.img`** — same as v11 (factory DTB + ttyS3) but **`soc-crit` downgraded to passive** so Linux does not emergency-reboot. (Proper OTP trim for accurate readings is still TODO.)
+**Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v13.img`** — factory DTB + ttyS3 + kernel **`rockchip,rk3308bs-tsadc`** linear conversion (see **`THERMAL_RK3308BS.md`**).
 
-**Proper fix (factory-matching TSADC):** see **`THERMAL_RK3308BS.md`** — requires kernel patch for RK3308BS linear conversion table, then rebuild boot/kernel (v13+).
+**Workaround (no kernel rebuild):** **`rk3308bs-1.0.0-emmc-fixed-v12.img`** — same as v11 but **`soc-crit` downgraded to passive** so Linux does not emergency-reboot (readings still wrong; trips disabled).
 
 ### Armbian 6.18 kernel + factory U-Boot memory layout (manual fallback)
 
@@ -292,14 +301,16 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 
 1. **Factory recovery first** — flash `KLP_IMG_ARTILLERY_..._Beta.img` (full ~5 GB, `rootfs @ 0x13000`). Confirm the board boots factory again.
 
-2. **Flash the fixed Armbian image** — **`rk3308bs-1.0.0-emmc-fixed-v12.img`** (v7 uboot + v12 boot: factory DTB + ttyS3 + no thermal emergency reboot).  
-   **Never** use `-v4.img` (patched uboot **without** hash fix — bricks at loader).
+2. **Flash the fixed Armbian image** — **`rk3308bs-1.0.0-emmc-fixed-v14.img`** (v7 uboot + v14 boot/kernel + reboot-safe rootfs).  
+   **Never** use `-v4.img` (patched uboot **without** hash fix — bricks at loader).  
+   **Avoid v13** after first boot — Armbian resize corrupts fixed GPT (see below).
 
 3. **Read the RKDevTool log** — both lines are required:
    ```
-   Start to download boot, offset=0xe800, size=18040832
+   Start to download boot, offset=0xe800, size=14630912
    Start to download rootfs, offset=0x17200, size=1647312896
    ```
+   (v12 used `size=18040832` for boot — still valid if you flash v12. Boot must fit the 17 MiB partition.)
    If `rootfs` is missing (log shows `total=33613312` only), the rootfs partition is empty — see **Option B** in the main guide (Advanced → write `rootfs.img` at **`0x17200`**).
 
 4. **At the U-Boot `=>` prompt** (optional diagnosis):
@@ -316,7 +327,9 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 | `Invalid DTB hash` | Custom DTB in `resource.img` without RSCE SHA1 update (fixed in v6+) |
 | Boot loop / `image overwritten` | Kernel decompress overlaps FDT at `0x01f00000` (fixed in v7 uboot env + hash) |
 | Kernel panic `unknown-block(0,0)` | DTB missing `root=PARTUUID=...` in `/chosen/bootargs` (fixed in v8+) |
-| Thermal reboot (~1 s or after banner) | TSADC uncalibrated on Armbian 6.18; factory OTP in DTB not enough (workaround: v12 passive soc-crit) |
+| Thermal reboot (~1 s or after banner) | TSADC uncalibrated on Armbian 6.18 (fix: v13+ RK3308BS linear TSADC; workaround: v12 passive soc-crit) |
+| Reboot hang / kernel panic after first boot | `armbian-resize-filesystem` expanded rootfs GPT on eMMC — U-Boot shows empty part 5 name and wrong size; fixed in **v14** (`/root/.no_rootfs_resize`) |
+| Blank LCD after Linux | DRM built as modules but not installed (v13); fixed in **v14** (built-in `CONFIG_DRM_ROCKCHIP=y`) |
 | Silent serial / boot loop on v9–v10 | Factory DTB disables UART3 unless fiq-debugger works (Armbian 6.18 has none) — fixed in v11 |
 | `Code check error -1` | Patched uboot without LOADER hash update (v4; fixed in v7) |
 | Old `-emmc-fixed.img` | `boot.img` had `resource.img` in ramdisk slot instead of second slot → U-Boot rejects it |
