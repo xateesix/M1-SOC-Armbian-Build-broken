@@ -270,6 +270,8 @@ v8 reached `Welcome to Armbian` first (custom DTB, no factory OTP) then the same
 
 **Fix:** Flash **`rk3308bs-1.0.0-emmc-fixed-v12.img`** — same as v11 (factory DTB + ttyS3) but **`soc-crit` downgraded to passive** so Linux does not emergency-reboot. (Proper OTP trim for accurate readings is still TODO.)
 
+**Proper fix (factory-matching TSADC):** see **`THERMAL_RK3308BS.md`** — requires kernel patch for RK3308BS linear conversion table, then rebuild boot/kernel (v13+).
+
 ### Armbian 6.18 kernel + factory U-Boot memory layout (manual fallback)
 
 Factory `uboot.img` only leaves ~25 MiB for a decompressed kernel (`kernel_addr_r=0x00680000`, `fdt_addr_r=0x01f00000`). Armbian 6.18 is larger → `boot_android` fails → PXE/`=>`.

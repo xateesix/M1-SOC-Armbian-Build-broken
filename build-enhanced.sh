@@ -21,6 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/config.env"
 PATCH_FILE="$SCRIPT_DIR/patches/0001-arm64-dts-rockchip-add-rk3308bs-evb-amic-v11.patch"
+PATCH_THERMAL="$SCRIPT_DIR/patches/0002-thermal-rockchip-rk3308bs-tsadc.patch"
 DTS_FILE="$SCRIPT_DIR/dts/rk3308bs-evb-amic-v11.dts"
 
 # ── Colors ────────────────────────────────────────────────────────────────
@@ -71,6 +72,10 @@ _install_userpatches() {
     mkdir -p "$BUILD_PATH/userpatches/kernel/rockchip64-current"
     cp "$PATCH_FILE" "$BUILD_PATH/userpatches/kernel/rockchip64-current/0001-add-rk3308bs-evb.patch"
     sed -i 's/\r$//' "$BUILD_PATH/userpatches/kernel/rockchip64-current/"*.patch
+    if [ -f "$PATCH_THERMAL" ]; then
+        cp "$PATCH_THERMAL" "$BUILD_PATH/userpatches/kernel/rockchip64-current/0002-rk3308bs-tsadc.patch"
+        sed -i 's/\r$//' "$BUILD_PATH/userpatches/kernel/rockchip64-current/0002-rk3308bs-tsadc.patch"
+    fi
 
     mkdir -p "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant"
     cat > "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf" <<EOF

@@ -96,6 +96,11 @@ def main() -> int:
         action="store_true",
         help="Downgrade soc-crit trip to passive (Armbian 6.18 tsadc lacks factory OTP trim)",
     )
+    ap.add_argument(
+        "--rk3308bs-tsadc",
+        action="store_true",
+        help="Set tsadc compatible to rockchip,rk3308bs-tsadc (needs kernel patch 0002)",
+    )
     args = ap.parse_args()
 
     src = args.dtb
@@ -156,6 +161,22 @@ def main() -> int:
                 [fdtput, "-t", "i", str(args.output), crit, "temperature", "999000"],
             )
             print("  soc-crit=passive @ 999C (no thermal emergency reboot)")
+        if args.rk3308bs_tsadc:
+            fdtput = shutil.which("fdtput")
+            if not fdtput:
+                raise FileNotFoundError("fdtput not found")
+            subprocess.check_call(
+                [
+                    fdtput,
+                    "-t",
+                    "s",
+                    str(args.output),
+                    "/tsadc@ff1f0000",
+                    "compatible",
+                    "rockchip,rk3308bs-tsadc",
+                ],
+            )
+            print("  tsadc@ff1f0000 compatible=rockchip,rk3308bs-tsadc")
     except FileNotFoundError as exc:
         print(exc, file=sys.stderr)
         return 1
