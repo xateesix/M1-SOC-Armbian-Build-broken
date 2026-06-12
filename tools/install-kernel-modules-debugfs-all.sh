@@ -16,8 +16,6 @@ FULL_DEP="$MOD_SRC/lib/modules/$KVER/modules.dep"
 [[ -f "$FULL_DEP" ]] || { echo "Missing $FULL_DEP"; exit 1; }
 
 DISPLAY_ROOTS=(
-	kernel/drivers/gpu/drm/panel/panel-simple.ko
-	kernel/drivers/video/backlight/pwm_bl.ko
 	kernel/drivers/gpu/drm/rockchip/rockchipdrm.ko
 )
 WIFI_ROOTS=(
@@ -40,9 +38,8 @@ add_mod() {
 }
 for rel in "${DISPLAY_MODS[@]}" "${WIFI_MODS[@]}"; do add_mod "$rel"; done
 
-mapfile -t DISPLAY_CORE_ORDER < <(bash "$TOOLS/_topo-mod-order.sh" "$FULL_DEP" $(printf '%s\n' "${DISPLAY_MODS[@]}" | grep -vE 'panel-simple|pwm_bl'))
-# Backlight before panel (panel DT has backlight= phandle); panel before rockchipdrm (vop_bind needs panel).
-DISPLAY_ORDER=("kernel/drivers/video/backlight/pwm_bl.ko" "kernel/drivers/gpu/drm/panel/panel-simple.ko" "${DISPLAY_CORE_ORDER[@]}")
+mapfile -t DISPLAY_CORE_ORDER < <(bash "$TOOLS/_topo-mod-order.sh" "$FULL_DEP" "${DISPLAY_MODS[@]}")
+DISPLAY_ORDER=("${DISPLAY_CORE_ORDER[@]}")
 mapfile -t WIFI_ORDER < <(bash "$TOOLS/_topo-mod-order.sh" "$FULL_DEP" "${WIFI_MODS[@]}")
 
 WORKDIR="$(mktemp -d)"
@@ -53,22 +50,53 @@ DST="$WORKDIR/rootfs.img"
 LOAD_DISPLAY="$WORKDIR/rk3308bs-load-display.sh"
 {
 	echo '#!/bin/bash'
-	echo 'set -euo pipefail'
+	echo 'set -eo pipefail'
 	echo "M=${MOD_BASE}/kernel"
+	echo 'export PATH=/sbin:/usr/sbin:/bin:/usr/bin'
 	echo 'log() { echo "RK3308BS-LCD: $*" >/dev/kmsg; }'
-	for rel in "${DISPLAY_ORDER[@]}"; do
-		echo "log insmod ${rel#kernel/}"
-		echo "insmod \"\$M/${rel#kernel/}\""
-	done
+	echo 'insmod_one() {'
+	echo '  local rel="$1"'
+	echo '  local path="$M/${rel#kernel/}"'
+	echo '  log "insmod ${rel#kernel/}"'
+	echo '  if insmod "$path"; then'
+	echo '    log "ok ${rel#kernel/}"'
+	echo '  else'
+	echo '    log "FAIL ${rel#kernel/} exit=$?"'
+	echo '    return 1'
+	echo '  fi'
+	echo '}'
+	echo 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug 2>/dev/null || true'
 	echo 'if [ -f /sys/kernel/debug/devices_deferred/scan ]; then echo 1 >/sys/kernel/debug/devices_deferred/scan; fi'
-	echo 'if [ ! -d /sys/class/drm/card0 ] && lsmod | grep -q rockchipdrm; then'
-	echo '  log reload rockchipdrm'
-	echo '  rmmod rockchipdrm 2>/dev/null || true'
-	echo '  insmod "$M/drivers/gpu/drm/rockchip/rockchipdrm.ko"'
+	echo 'log "panel-builtin=$(ls -1 /sys/bus/platform/drivers/panel-simple/ 2>/dev/null | tr "\\n" " ")"'
+	echo 'if [ -d /sys/devices/platform/panel ] && [ ! -e /sys/bus/platform/drivers/panel-simple/panel ]; then'
+	echo '  if echo panel > /sys/bus/platform/drivers/panel-simple/bind 2>/dev/null; then'
+	echo '    log "panel manual bind ok"'
+	echo '  else'
+	echo '    log "panel manual bind skipped or failed"'
+	echo '  fi'
+	echo 'fi'
+	for rel in "${DISPLAY_ORDER[@]}"; do
+		echo "insmod_one \"${rel}\""
+	done
+	echo 'sleep 0.5'
+	echo 'if [ -f /sys/kernel/debug/devices_deferred/scan ]; then'
+	echo '  echo 1 >/sys/kernel/debug/devices_deferred/scan'
+	echo '  log "deferred scan"'
+	echo 'fi'
+	echo 'if [ ! -d /sys/class/drm/card0 ]; then'
+	echo '  log "no card0; reload rockchipdrm stack"'
+	echo '  while lsmod | grep -q rockchipdrm; do rmmod rockchipdrm 2>/dev/null || break; done'
+	echo '  sleep 0.2'
+	echo '  insmod_one "kernel/drivers/gpu/drm/rockchip/rockchipdrm.ko" || true'
+	echo '  if [ -f /sys/kernel/debug/devices_deferred/scan ]; then echo 1 >/sys/kernel/debug/devices_deferred/scan; fi'
 	echo 'fi'
 	echo 'for bl in /sys/class/backlight/*/brightness; do'
 	echo '  [[ -f "$bl" ]] && echo 255 >"$bl"'
 	echo 'done'
+	echo 'log "drm=$(ls -1 /sys/class/drm/ 2>/dev/null | tr "\n" " ")"'
+	echo 'log "backlight=$(ls -1 /sys/class/backlight/ 2>/dev/null | tr "\n" " ")"'
+	echo 'log "fb=$(ls -1 /sys/class/graphics/ 2>/dev/null | tr "\n" " ")"'
+	echo 'log "panel-drv=$(ls -1 /sys/bus/platform/drivers/panel-simple/ 2>/dev/null | tr "\n" " ")"'
 } >"$LOAD_DISPLAY"
 
 LOAD_WIFI="$WORKDIR/rk3308bs-load-wifi.sh"

@@ -12,31 +12,13 @@ OUT = Path(__file__).resolve().parents[1] / "patches/0004-panel-simple-simple-pa
 
 FUNC = """
 /* Factory RK3308 DT uses legacy "simple-panel" + display-timings (5.10 binding). */
-static struct panel_desc *panel_simple_from_display_timings(struct device *dev)
+static struct panel_desc *panel_simple_desc_from_timing(struct device *dev,
+\t\t\t\t\t\tstruct display_timing *timing)
 {
-\tstruct display_timings *timings;
-\tstruct display_timing *timing;
 \tstruct panel_desc *desc;
 \tstruct videomode vm;
 \tunsigned int bus_flags;
 \tu32 bus_format;
-
-\ttimings = of_get_display_timings(dev->of_node);
-\tif (!timings)
-\t\treturn ERR_PTR(-ENODEV);
-
-\ttiming = display_timings_get(timings, timings->native_mode);
-\tif (!timing)
-\t\ttiming = display_timings_get(timings, 0);
-\tif (!timing) {
-\t\tdisplay_timings_release(timings);
-\t\treturn ERR_PTR(-EINVAL);
-\t}
-
-\ttiming = devm_kmemdup(dev, timing, sizeof(*timing), GFP_KERNEL);
-\tdisplay_timings_release(timings);
-\tif (!timing)
-\t\treturn ERR_PTR(-ENOMEM);
 
 \tdesc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 \tif (!desc)
@@ -57,6 +39,63 @@ static struct panel_desc *panel_simple_from_display_timings(struct device *dev)
 \tof_property_read_u32(dev->of_node, "height-mm", &desc->size.height);
 
 \treturn desc;
+}
+
+static struct panel_desc *panel_simple_from_display_timings(struct device *dev)
+{
+\tstruct device_node *timings_np;
+\tstruct display_timings *timings;
+\tstruct display_timing *timing;
+\tstruct panel_desc *desc;
+\tstatic const char * const fallback_names[] = { "timing3", "timing0", NULL };
+\tint i;
+
+\ttimings = of_get_display_timings(dev->of_node);
+\tif (timings) {
+\t\ttiming = display_timings_get(timings, timings->native_mode);
+\t\tif (!timing)
+\t\t\ttiming = display_timings_get(timings, 0);
+\t\tif (!timing) {
+\t\t\tdisplay_timings_release(timings);
+\t\t\tdev_err(dev, "display-timings: no usable mode\\n");
+\t\t\treturn ERR_PTR(-EINVAL);
+\t\t}
+
+\t\ttiming = devm_kmemdup(dev, timing, sizeof(*timing), GFP_KERNEL);
+\t\tdisplay_timings_release(timings);
+\t\tif (!timing)
+\t\t\treturn ERR_PTR(-ENOMEM);
+
+\t\treturn panel_simple_desc_from_timing(dev, timing);
+\t}
+
+\ttimings_np = of_get_child_by_name(dev->of_node, "display-timings");
+\tif (!timings_np) {
+\t\tdev_err(dev, "missing display-timings node\\n");
+\t\treturn ERR_PTR(-ENODEV);
+\t}
+
+\ttiming = devm_kzalloc(dev, sizeof(*timing), GFP_KERNEL);
+\tif (!timing) {
+\t\tof_node_put(timings_np);
+\t\treturn ERR_PTR(-ENOMEM);
+\t}
+
+\tfor (i = 0; fallback_names[i]; i++) {
+\t\tif (!of_get_display_timing(timings_np, fallback_names[i], timing))
+\t\t\tbreak;
+\t}
+\tof_node_put(timings_np);
+
+\tif (fallback_names[i]) {
+\t\tdesc = panel_simple_desc_from_timing(dev, timing);
+\t\tif (!IS_ERR(desc))
+\t\t\tdev_info(dev, "using fallback timing %s\\n", fallback_names[i]);
+\t\treturn desc;
+\t}
+
+\tdev_err(dev, "failed to parse display-timings\\n");
+\treturn ERR_PTR(-ENODEV);
 }
 
 """

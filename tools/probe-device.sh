@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-HOST="${1:-10.22.30.171}"
+HOST="${1:-10.22.30.172}"
 PASS="${2:-ztfalxtspv}"
 REMOTE='cat /etc/rk3308bs-release
 echo "--- dmesg display ---"
