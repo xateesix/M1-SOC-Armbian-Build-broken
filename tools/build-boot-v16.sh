@@ -12,7 +12,8 @@ python3 "$TOOLS/patch-dtb-bootargs.py" \
   --from-factory-resource "$FAC/04_boot_unpacked/resource.img" \
   --output "$REL/_fac-dtb-v16.dtb" \
   --armbian-serial \
-  --rk3308bs-tsadc
+  --rk3308bs-tsadc \
+  --rk3308-vop-resets
 
 python3 "$TOOLS/pack-resource-img.py" \
   --template "$FAC/04_boot_unpacked/resource.img" \

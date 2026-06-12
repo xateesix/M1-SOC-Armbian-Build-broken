@@ -101,6 +101,11 @@ def main() -> int:
         action="store_true",
         help="Set tsadc compatible to rockchip,rk3308bs-tsadc (needs kernel patch 0002)",
     )
+    ap.add_argument(
+        "--rk3308-vop-resets",
+        action="store_true",
+        help="Add CRU resets (axi/ahb/dclk) to vop@ff2e0000 (rockchipdrm bind needs ahb reset)",
+    )
     args = ap.parse_args()
 
     src = args.dtb
@@ -177,6 +182,41 @@ def main() -> int:
                 ],
             )
             print("  tsadc@ff1f0000 compatible=rockchip,rk3308bs-tsadc")
+        if args.rk3308_vop_resets:
+            fdtput = shutil.which("fdtput")
+            if not fdtput:
+                raise FileNotFoundError("fdtput not found")
+            # SRST_VOP_A/H/D = 38/39/40; cru phandle = 2 in factory DTB
+            subprocess.check_call(
+                [
+                    fdtput,
+                    "-t",
+                    "i",
+                    str(args.output),
+                    "/vop@ff2e0000",
+                    "resets",
+                    "2",
+                    "38",
+                    "2",
+                    "39",
+                    "2",
+                    "40",
+                ],
+            )
+            subprocess.check_call(
+                [
+                    fdtput,
+                    "-t",
+                    "s",
+                    str(args.output),
+                    "/vop@ff2e0000",
+                    "reset-names",
+                    "axi",
+                    "ahb",
+                    "dclk",
+                ],
+            )
+            print("  vop@ff2e0000 resets=SRST_VOP_A/H/D reset-names=axi,ahb,dclk")
     except FileNotFoundError as exc:
         print(exc, file=sys.stderr)
         return 1

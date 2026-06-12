@@ -15,6 +15,8 @@ cd "$SRC"
 git checkout -f v6.18
 patch -p1 --forward < "$AB/patch/kernel/archive/rockchip64-6.18/rk3308-add-tsadc-driver.patch"
 patch -p1 --forward < "$REPO/patches/0002-thermal-rockchip-rk3308bs-tsadc.patch"
+patch -p1 --forward < "$REPO/patches/0003-drm-rockchip-rk3308-vop-driver.patch"
+patch -p1 --forward < "$REPO/patches/0004-panel-simple-simple-panel-compat.patch"
 
 bash "$TOOLS/integrate-rtl8189fs.sh" "$SRC" "$AB"
 

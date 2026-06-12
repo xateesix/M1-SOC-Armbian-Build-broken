@@ -8,7 +8,7 @@ REL="$SCRIPT_DIR/releases/1.0.0"
 CONFIG="$SCRIPT_DIR/config.env"
 SRC="${1:-$REL/rootfs-v11.img}"
 OUT="${2:-$REL/rootfs-v24.img}"
-IMAGE_TAG="${RK3308BS_IMAGE_TAG:-v24-wifi-grow}"
+IMAGE_TAG="${RK3308BS_IMAGE_TAG:-v28-wifi-display-grow}"
 
 [[ -f "$CONFIG" ]] || { echo "Missing $CONFIG"; exit 1; }
 [[ -f "$SRC" ]] || { echo "Missing rootfs: $SRC"; exit 1; }
@@ -132,7 +132,7 @@ cat >"$WPA_UNIT" <<'EOF'
 Description=WPA supplicant for wlan0 (RK3308BS)
 DefaultDependencies=no
 After=local-fs.target rk3308bs-wifi-modules.service
-Before=network-pre.target systemd-networkd.service
+Before=armbian-firstrun.service network-pre.target systemd-networkd.service
 Wants=rk3308bs-wifi-modules.service
 
 [Service]
@@ -147,7 +147,7 @@ EOF
 
 cat >"$WANTS_DROPIN" <<'EOF'
 [Unit]
-Wants=rk3308bs-grow-rootfs.service rk3308bs-wifi-modules.service wpa-wlan0.service
+Wants=rk3308bs-grow-rootfs.service rk3308bs-display-modules.service rk3308bs-wifi-modules.service wpa-wlan0.service
 EOF
 
 cat >"$RELEASE" <<EOF
@@ -155,11 +155,12 @@ RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
 RK3308BS_WIFI=${WIFI_SSID:-none}
 RK3308BS_ROOTFS_GROW=oneshot
+RK3308BS_LCD=480x272-rgb
 EOF
 
 cat >"$ISSUE" <<EOF
 RK3308BS Armbian ${IMAGE_TAG}
-WiFi: ${WIFI_SSID:-off} | User: ${USER_NAME}
+LCD 480x272 | WiFi: ${WIFI_SSID:-off} | User: ${USER_NAME}
 First boot grows rootfs to ~6GB eMMC
 Verify: cat /etc/rk3308bs-release
 

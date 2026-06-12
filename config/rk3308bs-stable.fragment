@@ -1,3 +1,6 @@
 # RK3308BS 512MB: PREEMPT tick kernel hits timer_list corruption on 2nd boot (call_timer_fn @ 0x200000000).
 # CONFIG_PREEMPT is not set
 CONFIG_PREEMPT_VOLUNTARY=y
+# High-res tick reproduces __run_timers list corruption on early boot / soft-reset.
+CONFIG_HIGH_RES_TIMERS=n
+CONFIG_HZ=100
