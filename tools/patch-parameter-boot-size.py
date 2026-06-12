@@ -35,6 +35,13 @@ def patch_parameter(
         r"(0x[0-9a-fA-F]+)@0x([0-9a-fA-F]+)\(boot\),-@0x([0-9a-fA-F]+)\(rootfs:grow\)",
         text,
     )
+    fixed = False
+    if not m:
+        m = re.search(
+            r"(0x[0-9a-fA-F]+)@0x([0-9a-fA-F]+)\(boot\),0x[0-9a-fA-F]+@0x([0-9a-fA-F]+)\(rootfs\)",
+            text,
+        )
+        fixed = bool(m)
     if not m:
         raise SystemExit("Could not find boot/rootfs entries in parameter.txt CMDLINE")
 
@@ -61,12 +68,20 @@ def patch_parameter(
             f"({new_boot_size * SECTOR // (1024 * 1024)} MiB boot), -(rootfs)"
         )
 
-    new_text = re.sub(
-        r"0x[0-9a-fA-F]+@0x[0-9a-fA-F]+\(boot\),-@0x[0-9a-fA-F]+\(rootfs:grow\)",
-        f"{new_boot_hex}@0x{boot_off:08x}(boot),{rootfs_part}",
-        text,
-        count=1,
-    )
+    if fixed:
+        new_text = re.sub(
+            r"0x[0-9a-fA-F]+@0x[0-9a-fA-F]+\(boot\),0x[0-9a-fA-F]+@0x[0-9a-fA-F]+\(rootfs\)",
+            f"{new_boot_hex}@0x{boot_off:08x}(boot),{rootfs_part}",
+            text,
+            count=1,
+        )
+    else:
+        new_text = re.sub(
+            r"0x[0-9a-fA-F]+@0x[0-9a-fA-F]+\(boot\),-@0x[0-9a-fA-F]+\(rootfs:grow\)",
+            f"{new_boot_hex}@0x{boot_off:08x}(boot),{rootfs_part}",
+            text,
+            count=1,
+        )
     new_text = re.sub(
         r"# .*?\(boot\),-\(rootfs\).*",
         rootfs_note,
