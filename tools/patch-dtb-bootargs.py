@@ -39,6 +39,83 @@ def extract_factory_dtb(resource: Path) -> bytes:
     return data[off : off + struct.unpack(">I", data[off + 4 : off + 8])[0]]
 
 
+def _remove_dts_subnode(text: str, name: str) -> str:
+    """Remove a child node block like 'display-timings { ... };' from DTS source."""
+    needle = f"{name} {{"
+    start = text.find(needle)
+    if start < 0:
+        return text
+    line_start = text.rfind("\n", 0, start) + 1
+    depth = 0
+    i = text.find("{", start)
+    while i < len(text):
+        ch = text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                while end < len(text) and text[end] in " \t":
+                    end += 1
+                if end < len(text) and text[end] == ";":
+                    end += 1
+                if end < len(text) and text[end] == "\n":
+                    end += 1
+                return text[:line_start] + text[end:]
+        i += 1
+    return text
+
+
+def patch_rk3308_panel_dpi(dtb: Path) -> None:
+    """Use upstream panel-dpi + panel-timing instead of legacy simple-panel binding."""
+    dtc = shutil.which("dtc")
+    if not dtc:
+        raise FileNotFoundError("dtc not found (install device-tree-compiler)")
+
+    dts = dtb.with_suffix(".panel.dts")
+    subprocess.check_call([dtc, "-I", "dtb", "-O", "dts", "-o", str(dts), str(dtb)], stderr=subprocess.DEVNULL)
+    text = dts.read_text()
+    if 'compatible = "simple-panel"' in text:
+        text = text.replace('compatible = "simple-panel"', 'compatible = "panel-dpi"', 1)
+    text = _remove_dts_subnode(text, "display-timings")
+    timing_block = (
+        "\t\tpanel-timing {\n"
+        "\t\t\tclock-frequency = <0x895440>;\n"
+        "\t\t\thactive = <0x1e0>;\n"
+        "\t\t\tvactive = <0x110>;\n"
+        "\t\t\thback-porch = <0x2b>;\n"
+        "\t\t\thfront-porch = <0x08>;\n"
+        "\t\t\tvback-porch = <0x0c>;\n"
+        "\t\t\tvfront-porch = <0x08>;\n"
+        "\t\t\thsync-len = <0x04>;\n"
+        "\t\t\tvsync-len = <0x04>;\n"
+        "\t\t\thsync-active = <0x01>;\n"
+        "\t\t\tvsync-active = <0x01>;\n"
+        "\t\t\tde-active = <0x01>;\n"
+        "\t\t\tpixelclk-active = <0x01>;\n"
+        "\t\t};\n"
+    )
+    if "panel-timing {" not in text:
+        panel_idx = text.find("panel {")
+        if panel_idx < 0:
+            raise RuntimeError("panel node not found in decompiled DTS")
+        port_idx = text.find("port {", panel_idx)
+        if port_idx < 0:
+            raise RuntimeError("panel port node not found in decompiled DTS")
+        line_start = text.rfind("\n", panel_idx, port_idx) + 1
+        text = text[:line_start] + timing_block + text[line_start:]
+    dts.write_text(text)
+    subprocess.check_call(
+        [dtc, "-I", "dts", "-O", "dtb", "-o", str(dtb), str(dts), "-Wno-unit_address_vs_reg"],
+    )
+    dts.unlink(missing_ok=True)
+    print(
+        "  panel compatible=panel-dpi panel-timing=480x272@9MHz "
+        "(removed display-timings; bus-format unchanged on /panel)"
+    )
+
+
 def _find_fdt_slot(data: bytes) -> tuple[int, int]:
     magic = b"\xd0\x0d\xfe\xed"
     candidates: list[tuple[int, int]] = []
@@ -105,6 +182,11 @@ def main() -> int:
         "--rk3308-vop-resets",
         action="store_true",
         help="Add CRU resets (axi/ahb/dclk) to vop@ff2e0000 (rockchipdrm bind needs ahb reset)",
+    )
+    ap.add_argument(
+        "--rk3308-panel-dpi",
+        action="store_true",
+        help="Panel: panel-dpi + panel-timing (480x272@9MHz) for Linux 6.18 DRM",
     )
     args = ap.parse_args()
 
@@ -217,6 +299,8 @@ def main() -> int:
                 ],
             )
             print("  vop@ff2e0000 resets=SRST_VOP_A/H/D reset-names=axi,ahb,dclk")
+        if args.rk3308_panel_dpi:
+            patch_rk3308_panel_dpi(args.output)
     except FileNotFoundError as exc:
         print(exc, file=sys.stderr)
         return 1
