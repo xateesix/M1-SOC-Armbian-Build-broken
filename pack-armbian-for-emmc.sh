@@ -13,8 +13,9 @@
 #
 # Options:
 #   --version 1.0.0          stamp /etc/rk3308bs-release in rootfs
-#   --console ttyFIQ0        serial console (default; matches factory boot.img)
-#   --modules ./bsp/modules-factory   inject WiFi etc. for factory kernel
+#   --console ttyS3,1500000n8   serial console (Phase B default)
+#   --boot-mode armbian|factory  boot.img source (default: armbian)
+#   --modules ./bsp/modules-factory   Phase A only: inject factory 8189fs.ko
 #   --shrink                 min-size ext4 before pack (faster RKDevTool flash)
 #
 # Then (Windows):
@@ -27,7 +28,9 @@ ARMBIAN_IMG=""
 FACTORY_DIR=""
 OUT_DIR=""
 ROOT_PART="${ROOT_PART:-6}"
-CONSOLE="${CONSOLE:-ttyFIQ0}"
+EMMC_ROOT_PART="$ROOT_PART"
+BOOT_MODE="${BOOT_MODE:-armbian}"
+CONSOLE="${CONSOLE:-ttyS3,1500000n8}"
 VERSION="${VERSION:-dev}"
 MODULES_DIR="${MODULES_DIR:-$SCRIPT_DIR/bsp/modules-factory}"
 SHRINK="${SHRINK:-0}"
@@ -49,14 +52,20 @@ while [[ $# -gt 0 ]]; do
         --version) VERSION="$2"; shift 2 ;;
         --modules) MODULES_DIR="$2"; shift 2 ;;
         --shrink) SHRINK=1; shift ;;
+        --boot-mode) BOOT_MODE="$2"; shift 2 ;;
+        --factory-kernel) BOOT_MODE="factory"; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown: $1"; usage; exit 1 ;;
     esac
 done
 
+EMMC_ROOT_PART="$ROOT_PART"
+
 [[ -n "$ARMBIAN_IMG" && -n "$FACTORY_DIR" && -n "$OUT_DIR" ]] || { usage; exit 1; }
 [[ -f "$ARMBIAN_IMG" ]] || { echo "Missing Armbian image: $ARMBIAN_IMG"; exit 1; }
-[[ -f "$FACTORY_DIR/boot.img" ]] || { echo "Missing $FACTORY_DIR/boot.img"; exit 1; }
+if [[ "$BOOT_MODE" == "factory" ]]; then
+    [[ -f "$FACTORY_DIR/boot.img" ]] || { echo "Missing $FACTORY_DIR/boot.img"; exit 1; }
+fi
 [[ -f "$PATCH_BOOT" ]] || { echo "Missing $PATCH_BOOT"; exit 1; }
 
 ROOT_UUID=""
@@ -79,9 +88,26 @@ mkdir -p "$MNT" "$IMAGE" "$OUT_DIR"
 LOOP=$(sudo losetup -f --show -P "$ARMBIAN_IMG")
 sudo partprobe "$LOOP" 2>/dev/null || sleep 1
 
-ROOT_DEV="${LOOP}p${ROOT_PART}"
-[[ -b "$ROOT_DEV" ]] || ROOT_DEV="${LOOP}p2"
-[[ -b "$ROOT_DEV" ]] || { echo "No root partition on $ARMBIAN_IMG"; exit 1; }
+ROOT_DEV=""
+for p in 1 2 6 "$EMMC_ROOT_PART"; do
+    if [[ -b "${LOOP}p${p}" ]]; then
+        ROOT_DEV="${LOOP}p${p}"
+        break
+    fi
+done
+if [[ -z "$ROOT_DEV" ]] && command -v lsblk >/dev/null; then
+    ROOT_DEV=$(lsblk -ln -o NAME,FSTYPE "$LOOP" 2>/dev/null | awk '$2 ~ /ext4|Linux/ {print "/dev/"$1; exit}')
+fi
+if [[ -z "$ROOT_DEV" || ! -b "$ROOT_DEV" ]]; then
+    PART_START=$(fdisk -l "$ARMBIAN_IMG" 2>/dev/null | awk '/Linux root|Linux filesystem/ {print $2; exit}')
+    if [[ -n "$PART_START" && "$PART_START" -gt 0 ]]; then
+        sudo losetup -d "$LOOP" 2>/dev/null || true
+        LOOP=$(sudo losetup -f --show -o "$((PART_START * 512))" "$ARMBIAN_IMG")
+        ROOT_DEV="$LOOP"
+    fi
+fi
+[[ -n "$ROOT_DEV" && -b "$ROOT_DEV" ]] || { echo "No root partition on $ARMBIAN_IMG (tried p1/p2/p6 and fdisk offset)"; exit 1; }
+echo "Using Armbian root source: $ROOT_DEV (eMMC cmdline still uses mmcblk0p${EMMC_ROOT_PART})" 
 
 ROOTFS_IMG="$OUT_DIR/rootfs.img"
 echo "=== Extract custom rootfs from Armbian image ==="
@@ -97,15 +123,20 @@ echo "=== Customize rootfs (version, hardware modules) ==="
 sudo mount -o loop "$ROOTFS_IMG" "$MNT"
 
 BUILD_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u)"
+if [[ "$BOOT_MODE" == "armbian" ]]; then
+    BOOT_PHASE="armbian-kernel-custom-rootfs"
+else
+    BOOT_PHASE="factory-kernel-custom-rootfs"
+fi
 sudo tee "$MNT/etc/rk3308bs-release" >/dev/null <<EOF
 RK3308BS_IMAGE_VERSION=$VERSION
 RK3308BS_IMAGE_BUILD=$BUILD_TS
 RK3308BS_BOARD=rockchip,rk3308bs-evb-amic-v11
-RK3308BS_BOOT_PHASE=factory-kernel-custom-rootfs
+RK3308BS_BOOT_PHASE=$BOOT_PHASE
 RK3308BS_CONSOLE=$CONSOLE
 EOF
 
-if [[ -d "$MODULES_DIR" && -f "$MODULES_DIR/KERNEL_VERSION" ]]; then
+if [[ "$BOOT_MODE" != "armbian" && -d "$MODULES_DIR" && -f "$MODULES_DIR/KERNEL_VERSION" ]]; then
     FKVER="$(cat "$MODULES_DIR/KERNEL_VERSION")"
     echo "Injecting factory kernel modules for $FKVER ..."
     sudo mkdir -p "$MNT/lib/modules/$FKVER/extra"
@@ -127,23 +158,38 @@ sudo umount "$MNT"
 if [[ "$SHRINK" == "1" ]]; then
     command -v resize2fs >/dev/null || { echo "Install e2fsprogs for resize2fs"; exit 1; }
     echo "=== Shrink rootfs to minimum size (faster flash) ==="
+    sudo e2fsck -f -y "$ROOTFS_IMG"
     sudo resize2fs -M "$ROOTFS_IMG"
 fi
 
 if [[ -n "$ROOT_UUID" ]]; then
     CMDLINE="earlycon=uart8250,mmio32,0xff0d0000 console=${CONSOLE} root=PARTUUID=${ROOT_UUID} rootfstype=ext4 rw rootwait loglevel=7"
 else
-    CMDLINE="earlycon=uart8250,mmio32,0xff0d0000 console=${CONSOLE} root=/dev/mmcblk0p${ROOT_PART} rootfstype=ext4 rw rootwait loglevel=7"
+    CMDLINE="earlycon=uart8250,mmio32,0xff0d0000 console=${CONSOLE} root=/dev/mmcblk0p${EMMC_ROOT_PART} rootfstype=ext4 rw rootwait loglevel=7"
 fi
 
 BOOTIMG="$OUT_DIR/boot.img"
-bash "$PATCH_BOOT" "$FACTORY_DIR/boot.img" "$BOOTIMG" "$CMDLINE"
+if [[ "$BOOT_MODE" == "armbian" ]]; then
+    echo "=== Build Phase B boot.img (Armbian kernel + custom DTB) ==="
+    bash "$SCRIPT_DIR/tools/build-armbian-bootimg.sh" \
+        --armbian "$ARMBIAN_IMG" \
+        --out "$BOOTIMG" \
+        --factory "$FACTORY_DIR" \
+        --console "$CONSOLE" \
+        ${ROOT_UUID:+--root-uuid "$ROOT_UUID"}
+else
+    echo "=== Phase A: patch factory boot.img cmdline only ==="
+    bash "$PATCH_BOOT" "$FACTORY_DIR/boot.img" "$BOOTIMG" "$CMDLINE"
+fi
 
 echo "=== Stage Rockchip pack_input ==="
-cp "$FACTORY_DIR/MiniLoaderAll.bin" "$FACTORY_DIR/parameter.txt" \
+cp "$FACTORY_DIR/MiniLoaderAll.bin" \
    "$FACTORY_DIR/trust.img" "$FACTORY_DIR/uboot.img" \
    "$FACTORY_DIR/misc.img" "$FACTORY_DIR/recovery.img" "$IMAGE/"
 cp "$BOOTIMG" "$ROOTFS_IMG" "$IMAGE/"
+echo "=== Patch parameter.txt boot partition for boot.img size ==="
+python3 "$SCRIPT_DIR/tools/patch-parameter-boot-size.py" \
+    "$FACTORY_DIR/parameter.txt" "$BOOTIMG" "$IMAGE/parameter.txt"
 cp "$FACTORY_DIR/package-file" "$PACK/"
 
 ROOTFS_BYTES=$(wc -c < "$ROOTFS_IMG" | tr -d ' ')
@@ -156,7 +202,7 @@ cat >"$OUT_DIR/manifest.json" <<EOF
   "rootfs_uuid": "${ROOT_UUID:-}",
   "console": "$CONSOLE",
   "armbian_source": "$(basename "$ARMBIAN_IMG")",
-  "boot_phase": "factory-kernel-custom-rootfs",
+  "boot_phase": "$BOOT_PHASE",
   "flash": "RKDevTool Upgrade Firmware -- allow 5-8 min for rootfs write"
 }
 EOF

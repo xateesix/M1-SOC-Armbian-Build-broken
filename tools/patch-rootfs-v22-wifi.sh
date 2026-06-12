@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# v22 rootfs: Armbian firstrun + WiFi preset + one-time eMMC rootfs grow (no armbian-resize GPT bug).
+# Rootfs: Armbian firstrun + OurIOT WiFi + grow rootfs + wpa_supplicant/networkd at boot.
+# NEVER use debugfs set_inode_field (corrupts ext4 inodes).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REL="$SCRIPT_DIR/releases/1.0.0"
 CONFIG="$SCRIPT_DIR/config.env"
 SRC="${1:-$REL/rootfs-v11.img}"
-OUT="${2:-$REL/rootfs-v22.img}"
-IMAGE_TAG="${RK3308BS_IMAGE_TAG:-v22-wifi-grow}"
+OUT="${2:-$REL/rootfs-v24.img}"
+IMAGE_TAG="${RK3308BS_IMAGE_TAG:-v24-wifi-grow}"
 
 [[ -f "$CONFIG" ]] || { echo "Missing $CONFIG"; exit 1; }
 [[ -f "$SRC" ]] || { echo "Missing rootfs: $SRC"; exit 1; }
@@ -26,7 +27,10 @@ WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 DST="$WORKDIR/rootfs.img"
+cp "$SRC" "$DST"
+
 NO_RESIZE="$WORKDIR/no_rootfs_resize"
+: >"$NO_RESIZE"
 FIRSTBOOT="$WORKDIR/not_logged_in_yet"
 SERIAL_GETTY="$WORKDIR/serial-root-autologin.conf"
 RELEASE="$WORKDIR/rk3308bs-release"
@@ -34,9 +38,10 @@ ISSUE="$WORKDIR/issue"
 HOSTNAME="$WORKDIR/hostname"
 GROW_SH="$WORKDIR/rk3308bs-grow-rootfs.sh"
 GROW_UNIT="$WORKDIR/rk3308bs-grow-rootfs.service"
-
-cp "$SRC" "$DST"
-: >"$NO_RESIZE"
+WPA_CONF="$WORKDIR/wpa_supplicant-wlan0.conf"
+NETDEV="$WORKDIR/25-wlan0.network"
+WPA_UNIT="$WORKDIR/wpa-wlan0.service"
+WANTS_DROPIN="$WORKDIR/rk3308bs.conf"
 
 {
 	echo "# RK3308BS — Armbian non-interactive first boot + WiFi"
@@ -102,6 +107,49 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
+cat >"$WPA_CONF" <<EOF
+country=${WIFI_COUNTRY}
+ctrl_interface=/var/run/wpa_supplicant
+update_config=0
+
+network={
+	ssid="${WIFI_SSID}"
+	psk="${WIFI_PASSWORD}"
+	key_mgmt=WPA-PSK
+}
+EOF
+
+cat >"$NETDEV" <<'EOF'
+[Match]
+Name=wlan0
+
+[Network]
+DHCP=yes
+EOF
+
+cat >"$WPA_UNIT" <<'EOF'
+[Unit]
+Description=WPA supplicant for wlan0 (RK3308BS)
+DefaultDependencies=no
+After=local-fs.target rk3308bs-wifi-modules.service
+Before=network-pre.target systemd-networkd.service
+Wants=rk3308bs-wifi-modules.service
+
+[Service]
+Type=simple
+ExecStart=/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -i wlan0
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat >"$WANTS_DROPIN" <<'EOF'
+[Unit]
+Wants=rk3308bs-grow-rootfs.service rk3308bs-wifi-modules.service wpa-wlan0.service
+EOF
+
 cat >"$RELEASE" <<EOF
 RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
@@ -120,7 +168,8 @@ EOF
 echo "rk3308bs-${IMAGE_TAG}" >"$HOSTNAME"
 
 for f in not_logged_in_yet serial-root-autologin.conf rk3308bs-release issue hostname \
-	rk3308bs-grow-rootfs.sh rk3308bs-grow-rootfs.service; do
+	rk3308bs-grow-rootfs.sh rk3308bs-grow-rootfs.service wpa_supplicant-wlan0.conf \
+	25-wlan0.network wpa-wlan0.service rk3308bs.conf; do
 	[[ -f "$WORKDIR/$f" ]] && sed -i 's/\r$//' "$WORKDIR/$f"
 done
 
@@ -141,16 +190,19 @@ write $SERIAL_GETTY /etc/systemd/system/serial-getty@ttyS3.service.d/autologin.c
 mkdir /usr/local/sbin
 write $GROW_SH /usr/local/sbin/rk3308bs-grow-rootfs.sh
 write $GROW_UNIT /etc/systemd/system/rk3308bs-grow-rootfs.service
+mkdir /etc/wpa_supplicant
+write $WPA_CONF /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+mkdir /etc/systemd/network
+write $NETDEV /etc/systemd/network/25-wlan0.network
+write $WPA_UNIT /etc/systemd/system/wpa-wlan0.service
 mkdir /etc/systemd/system/multi-user.target.d
+write $WANTS_DROPIN /etc/systemd/system/multi-user.target.d/rk3308bs.conf
 unlink /etc/systemd/system/basic.target.wants/armbian-resize-filesystem.service
 cd /etc/systemd/system
 symlink /dev/null armbian-resize-filesystem.service
 quit
 EOF
 
-debugfs -w "$DST" -f "$CMD"
-
+debugfs -w "$DST" -f "$CMD" 2>&1 | grep -vE 'already exists|File not found by ext2_lookup while looking up' || true
 cp "$DST" "$OUT"
-echo "Wrote $OUT (${IMAGE_TAG}: WiFi=${WIFI_SSID:-off}, grow-rootfs oneshot)"
-debugfs -R "dump /root/.not_logged_in_yet $WORKDIR/verify-preset" "$OUT" >/dev/null
-grep -E "PRESET_NET_WIFI|PRESET_USER_NAME" "$WORKDIR/verify-preset" || true
+echo "Wrote $OUT (${IMAGE_TAG}: WiFi=${WIFI_SSID:-off})"

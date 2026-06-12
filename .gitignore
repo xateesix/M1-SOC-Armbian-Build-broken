@@ -1,0 +1,33 @@
+# Large binaries and flash artifacts (rebuild from scripts)
+*.img
+*.lz4
+*.zip
+releases/
+factory_fresh/01_update_img/
+factory_fresh/02_rkimagemaker/
+factory_fresh/03_partitions/
+factory_fresh/04_boot_unpacked/
+factory_fresh/06_smoke_test/
+factory_extract/
+factory_unpacked/
+_factory_ref/
+_fixed_check/
+_v2_check/
+KLP_IMG*/
+_modules*/
+pack_input*/
+_hdr*/
+_unpack*/
+
+# Build logs and local junk
+*.log
+teraterm-log/
+.cursor/
+*.lnk
+"I,data*"
+
+# Compiled DTB (rebuild from .dts)
+*.dtb
+
+# Optional: keep credentials local only (config.env is tracked for this project backup)
+# config.env

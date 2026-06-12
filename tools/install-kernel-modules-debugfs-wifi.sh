@@ -48,13 +48,12 @@ kernel/drivers/net/wireless/rtl8189fs/8189fs.ko: kernel/net/wireless/cfg80211.ko
 EOF
 
 LOAD_UNIT="$WORKDIR/rk3308bs-wifi-modules.service"
-WANTS_DROPIN="$WORKDIR/rk3308bs.conf"
 cat >"$LOAD_UNIT" <<'EOF'
 [Unit]
 Description=RK3308BS load 8189fs WiFi modules
 DefaultDependencies=no
 After=local-fs.target
-Before=network-pre.target
+Before=network-pre.target wpa-wlan0.service
 
 [Service]
 Type=oneshot
@@ -63,11 +62,6 @@ RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
-EOF
-
-cat >"$WANTS_DROPIN" <<'EOF'
-[Unit]
-Wants=rk3308bs-grow-rootfs.service rk3308bs-wifi-modules.service
 EOF
 
 declare -A MKDONE=()
@@ -97,8 +91,6 @@ cat >>"$CMD" <<EOF
 write $MODULES_DEP /usr/lib/modules/${KVER}/modules.dep
 write $LOAD_SH /usr/local/sbin/rk3308bs-load-wifi.sh
 write $LOAD_UNIT /etc/systemd/system/rk3308bs-wifi-modules.service
-mkdir /etc/systemd/system/multi-user.target.d
-write $WANTS_DROPIN /etc/systemd/system/multi-user.target.d/rk3308bs.conf
 quit
 EOF
 
