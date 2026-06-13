@@ -10,6 +10,9 @@ from pathlib import Path
 
 SECTOR = 512
 ALIGN = 0x100  # 128 KiB alignment
+# RKDevTool flashes rootfs at boot_end from the Armbian-fixed layout (0xe800+0x8a00=0x17200).
+# Do not shrink boot below this or GPT rootfs start and flash offset diverge.
+MIN_BOOT_SECTORS = 0x8A00
 
 
 def boot_sectors(boot_img: Path) -> int:
@@ -48,7 +51,7 @@ def patch_parameter(
     old_boot_size = int(m.group(1), 16)
     boot_off = int(m.group(2), 16)
     old_root_off = int(m.group(3), 16)
-    new_boot_size = boot_sectors(boot_img)
+    new_boot_size = max(boot_sectors(boot_img), MIN_BOOT_SECTORS)
     new_root_off = boot_off + new_boot_size
 
     new_boot_hex = f"0x{new_boot_size:08x}"

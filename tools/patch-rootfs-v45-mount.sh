@@ -19,10 +19,48 @@ HOOK_PRECONF="$SCRIPT_DIR/userpatches-chroot/30-rk3308bs-preconfigure.sh"
 [[ -f "$HOOK_PRECONF" ]] || { echo "Missing $HOOK_PRECONF"; exit 1; }
 [[ -d "$BOOT_DIR/scripts" ]] || { echo "Missing $BOOT_DIR/scripts"; exit 1; }
 
-if ! sudo -n true 2>/dev/null; then
-	echo "Need passwordless sudo for loop mount (run: sudo -v)"
+if [[ $EUID -eq 0 ]]; then
+	SUDO=""
+elif sudo -n true 2>/dev/null; then
+	SUDO="sudo"
+else
+	echo "Need root or passwordless sudo for loop mount (run: sudo -v, or: wsl -u root ...)"
 	exit 1
 fi
+
+run_root() {
+	if [[ -n "$SUDO" ]]; then
+		sudo "$@"
+	else
+		"$@"
+	fi
+}
+
+setup_cross_chroot() {
+	[[ "$(uname -m)" == "aarch64" ]] && return 0
+	local qemu_bin=""
+	for candidate in \
+		/usr/bin/qemu-aarch64-static \
+		/usr/bin/qemu-aarch64 \
+		/usr/libexec/qemu-binfmt/aarch64-binfmt; do
+		[[ -x "$candidate" ]] && qemu_bin="$candidate" && break
+	done
+	if [[ -z "$qemu_bin" ]]; then
+		echo "[rk3308bs] Installing qemu-user-hwe for ARM64 chroot ..."
+		run_root apt-get update -qq
+		run_root apt-get install -y -qq qemu-user-hwe qemu-user-binfmt-hwe || true
+		for candidate in /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64; do
+			[[ -x "$candidate" ]] && qemu_bin="$candidate" && break
+		done
+	fi
+	[[ -n "$qemu_bin" ]] || { echo "No qemu-aarch64 binary found (install qemu-user-hwe)"; exit 1; }
+	run_root mkdir -p "$MNT/usr/bin"
+	run_root cp -f "$qemu_bin" "$MNT/usr/bin/qemu-aarch64-static"
+}
+
+teardown_cross_chroot() {
+	rm -f "$MNT/usr/bin/qemu-aarch64-static"
+}
 
 # shellcheck source=/dev/null
 source "$CONFIG"
@@ -41,14 +79,15 @@ MNT="$WORKDIR/mnt"
 IMG="$WORKDIR/rootfs.img"
 
 cleanup() {
-	sudo umount "$MNT" 2>/dev/null || true
+	run_root umount "$MNT" 2>/dev/null || true
 	rm -rf "$WORKDIR"
 }
 trap cleanup EXIT
 
 cp "$SRC" "$IMG"
 mkdir -p "$MNT"
-sudo mount -o loop "$IMG" "$MNT"
+run_root mount -o loop "$IMG" "$MNT"
+setup_cross_chroot
 
 run_chroot_hook() {
 	local hook="$1"
@@ -56,15 +95,15 @@ run_chroot_hook() {
 	name="$(basename "$hook")"
 	cp "$hook" "$MNT/tmp/$name"
 	chmod +x "$MNT/tmp/$name"
-	sudo chroot "$MNT" /bin/bash "/tmp/$name"
-	sudo rm -f "$MNT/tmp/$name"
+	run_root chroot "$MNT" /bin/bash "/tmp/$name"
+	run_root rm -f "$MNT/tmp/$name"
 }
 
 run_chroot_hook "$HOOK_RESIZE"
 
 cp "$HOOK_PRECONF" "$MNT/tmp/rk3308bs-preconfigure.sh"
 chmod +x "$MNT/tmp/rk3308bs-preconfigure.sh"
-sudo chroot "$MNT" env \
+run_root chroot "$MNT" env \
 	ROOT_PASSWORD="$ROOT_PASSWORD" \
 	USER_NAME="$USER_NAME" \
 	USER_PASSWORD="$USER_PASSWORD" \
@@ -74,13 +113,13 @@ sudo chroot "$MNT" env \
 	WIFI_SSID="" \
 	WIFI_PASSWORD="" \
 	/bin/bash /tmp/rk3308bs-preconfigure.sh
-sudo rm -f "$MNT/tmp/rk3308bs-preconfigure.sh"
+run_root rm -f "$MNT/tmp/rk3308bs-preconfigure.sh"
 
 # --- /boot/system.cfg + scripts (BTT-style, populated from config.env) ---
-sudo mkdir -p "$MNT/boot/scripts"
+run_root mkdir -p "$MNT/boot/scripts"
 for script in rk3308bs_init.sh system_cfg.sh sync_wifi_from_cfg.sh; do
 	cp "$BOOT_DIR/scripts/$script" "$MNT/boot/scripts/$script"
-	sudo chmod +x "$MNT/boot/scripts/$script"
+	run_root chmod +x "$MNT/boot/scripts/$script"
 done
 
 SYSTEM_CFG="$WORKDIR/system.cfg"
@@ -94,12 +133,12 @@ WIFI_SSID='${WIFI_SSID:-}'
 WIFI_PASSWD='${WIFI_PASSWORD:-}'
 WIFI_COUNTRY='${WIFI_COUNTRY}'
 EOF
-sudo cp "$SYSTEM_CFG" "$MNT/boot/system.cfg"
-sudo chmod 644 "$MNT/boot/system.cfg"
+run_root cp "$SYSTEM_CFG" "$MNT/boot/system.cfg"
+run_root chmod 644 "$MNT/boot/system.cfg"
 
 # wpa_supplicant (also synced from system.cfg on boot via rk3308bs_init)
-sudo mkdir -p "$MNT/etc/wpa_supplicant"
-sudo tee "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf" >/dev/null <<EOF
+run_root mkdir -p "$MNT/etc/wpa_supplicant"
+run_root tee "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf" >/dev/null <<EOF
 country=${WIFI_COUNTRY}
 ctrl_interface=/var/run/wpa_supplicant
 update_config=0
@@ -110,9 +149,9 @@ network={
 	key_mgmt=WPA-PSK
 }
 EOF
-sudo chmod 600 "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
+run_root chmod 600 "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
 
-sudo tee "$MNT/etc/systemd/network/25-wlan0.network" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/systemd/network/25-wlan0.network" >/dev/null <<'EOF'
 [Match]
 Name=wlan0
 
@@ -120,7 +159,7 @@ Name=wlan0
 DHCP=yes
 EOF
 
-sudo tee "$MNT/etc/systemd/system/wpa-wlan0.service" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/systemd/system/wpa-wlan0.service" >/dev/null <<'EOF'
 [Unit]
 Description=WPA supplicant for wlan0 (RK3308BS)
 DefaultDependencies=no
@@ -137,7 +176,7 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-sudo tee "$MNT/etc/systemd/system/rk3308bs-boot-config.service" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/systemd/system/rk3308bs-boot-config.service" >/dev/null <<'EOF'
 [Unit]
 Description=RK3308BS apply /boot/system.cfg (hostname, TZ, WiFi)
 DefaultDependencies=no
@@ -155,7 +194,7 @@ WantedBy=multi-user.target
 EOF
 
 # --- keyboard / locale / autologin / firstrun off ---
-sudo tee "$MNT/etc/default/keyboard" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/default/keyboard" >/dev/null <<'EOF'
 XKBMODEL="pc105"
 XKBLAYOUT="us"
 XKBVARIANT=""
@@ -163,7 +202,7 @@ XKBOPTIONS=""
 BACKSPACE="guess"
 EOF
 
-sudo tee "$MNT/etc/default/console-setup" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/default/console-setup" >/dev/null <<'EOF'
 ACTIVE_CONSOLES="/dev/tty[1-6]"
 CHARMAP="UTF-8"
 CODESET="Uni2"
@@ -172,15 +211,15 @@ FONTSIZE="8x16"
 VIDEOMODE=
 EOF
 
-sudo tee "$MNT/etc/issue" >/dev/null <<EOF
+run_root tee "$MNT/etc/issue" >/dev/null <<EOF
 RK3308BS Armbian ${IMAGE_TAG}
-Serial: auto-login ${USER_NAME} on ttyS3
+Serial: auto-login ${USER_NAME} on ${SERIAL_GETTY} @ ${SERIAL_BAUD}
 Edit WiFi/host/TZ: /boot/system.cfg then reboot
 Image: /etc/rk3308bs-release
 
 EOF
 
-sudo tee "$MNT/etc/rk3308bs-release" >/dev/null <<EOF
+run_root tee "$MNT/etc/rk3308bs-release" >/dev/null <<EOF
 RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
 RK3308BS_WIFI=${WIFI_SSID:-none}
@@ -191,45 +230,38 @@ RK3308BS_LCD=480x272-rgb
 RK3308BS_SYSTEM_CFG=/boot/system.cfg
 EOF
 
-echo "$HOSTNAME" | sudo tee "$MNT/etc/hostname" >/dev/null
+echo "$HOSTNAME" | run_root tee "$MNT/etc/hostname" >/dev/null
 
-sudo mkdir -p "$MNT/etc/systemd/system/serial-getty@ttyS3.service.d"
-sudo tee "$MNT/etc/systemd/system/serial-getty@ttyS3.service.d/autologin.conf" >/dev/null <<EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin ${USER_NAME} --keep-baud 115200,1500000,9600 --noclear %I \$TERM
-Type=idle
-EOF
+bash "$SCRIPT_DIR/tools/_apply-serial-getty.sh" "$MNT" "$USER_NAME" "$SERIAL_GETTY" "$SERIAL_BAUD"
 
-sudo rm -f \
+run_root rm -f \
 	"$MNT/etc/systemd/system/getty@.service.d/override.conf" \
 	"$MNT/etc/systemd/system/serial-getty@.service.d/override.conf" \
 	"$MNT/etc/systemd/system/serial-getty@.service.d/autologin.conf" \
-	"$MNT/etc/systemd/system/serial-getty@ttyS3.service.d/baud1500000.conf" \
+	"$MNT/etc/systemd/system/serial-getty@${SERIAL_GETTY}.service.d/baud1500000.conf" \
 	"$MNT/etc/profile.d/armbian-check-first-login.sh" \
 	"$MNT/etc/profile.d/armbian-check-first-login-reboot.sh" \
 	"$MNT/root/.not_logged_in_yet" \
 	"$MNT/root/.no_rootfs_resize"
 
-sudo rm -f \
+run_root rm -f \
 	"$MNT/etc/systemd/system/multi-user.target.wants/armbian-firstrun.service" \
 	"$MNT/etc/systemd/system/multi-user.target.wants/armbian-firstlogin.service"
 
-sudo ln -sf /dev/null "$MNT/etc/systemd/system/armbian-firstrun.service"
-sudo ln -sf /dev/null "$MNT/etc/systemd/system/armbian-firstlogin.service"
+run_root ln -sf /dev/null "$MNT/etc/systemd/system/armbian-firstrun.service"
+run_root ln -sf /dev/null "$MNT/etc/systemd/system/armbian-firstlogin.service"
 
-# Enable stock Armbian resize + our boot-config / wpa (chroot systemctl)
-sudo chroot "$MNT" systemctl enable armbian-resize-filesystem.service 2>/dev/null || true
-sudo chroot "$MNT" systemctl enable rk3308bs-boot-config.service 2>/dev/null || true
-sudo chroot "$MNT" systemctl enable wpa-wlan0.service 2>/dev/null || true
+run_root chroot "$MNT" systemctl enable armbian-resize-filesystem.service 2>/dev/null || true
+run_root chroot "$MNT" systemctl enable rk3308bs-boot-config.service 2>/dev/null || true
+run_root chroot "$MNT" systemctl enable wpa-wlan0.service 2>/dev/null || true
 
-sudo chmod 644 "$MNT/etc/systemd/system/serial-getty@ttyS3.service.d/autologin.conf"
-sudo chmod 644 "$MNT/etc/passwd" "$MNT/etc/group"
-sudo chmod 640 "$MNT/etc/shadow" "$MNT/etc/gshadow"
-sudo chown root:shadow "$MNT/etc/shadow" "$MNT/etc/gshadow" 2>/dev/null || true
-sudo chown -R "${USER_NAME}:${USER_NAME}" "$MNT/home/${USER_NAME}"
+run_root chmod 644 "$MNT/etc/passwd" "$MNT/etc/group"
+run_root chmod 640 "$MNT/etc/shadow" "$MNT/etc/gshadow"
+run_root chroot "$MNT" chown root:shadow /etc/shadow /etc/gshadow 2>/dev/null || true
+run_root chroot "$MNT" chown -R "${USER_NAME}:${USER_NAME}" "/home/${USER_NAME}" 2>/dev/null || true
 
-sudo umount "$MNT"
+teardown_cross_chroot
+run_root umount "$MNT"
 cp "$IMG" "$OUT"
 trap - EXIT
 rm -rf "$WORKDIR"

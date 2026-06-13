@@ -18,7 +18,7 @@ for v in 8 9 10 11 12 13 14 15 16; do
 	rm -f "$REL/_boot-v${v}.img" "$REL/_resource-v${v}.img"
 done
 rm -f "$REL/_boot-fixed-dtbhash.img" "$REL/boot.img" "$REL/boot-fixed-header.img"
-rm -f "$REL/_uboot"*.img "$REL/firmware.img"
+rm -f "$REL/_uboot_patched_test.img" "$REL/firmware.img"
 
 # Old full firmware images (keep v42 rollback + v43 latest)
 for v in $(seq 21 41); do
