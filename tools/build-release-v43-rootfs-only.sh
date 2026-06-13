@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Repack v43 rootfs/boot only (reuse existing v43 kernel with patch 0008).
+# WARNING: uses patch-rootfs-v17-debugfs.sh — corrupts ext4 inodes (bogus i_mode login loop).
+# Do NOT flash for new installs. Use build-release-v45-rootfs-only.sh instead.
 set -euo pipefail
+echo "WARNING: v43 rootfs patch uses debugfs set_inode_field (known corrupt). Prefer v45." >&2
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REL="$SCRIPT_DIR/releases/1.0.0"
 TOOLS="$SCRIPT_DIR/tools"

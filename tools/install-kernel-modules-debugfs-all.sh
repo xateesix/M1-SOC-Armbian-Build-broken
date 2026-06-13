@@ -201,6 +201,8 @@ write $DISPLAY_TIMER /etc/systemd/system/rk3308bs-display-modules.timer
 write $WIFI_UNIT /etc/systemd/system/rk3308bs-wifi-modules.service
 mkdir /etc/systemd/system/timers.target.wants
 ln /etc/systemd/system/rk3308bs-display-modules.timer /etc/systemd/system/timers.target.wants/rk3308bs-display-modules.timer
+mkdir /etc/systemd/system/multi-user.target.wants
+ln /etc/systemd/system/rk3308bs-wifi-modules.service /etc/systemd/system/multi-user.target.wants/rk3308bs-wifi-modules.service
 quit
 EOF
 

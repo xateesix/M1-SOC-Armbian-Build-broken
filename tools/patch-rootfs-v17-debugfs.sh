@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Patch rootfs without sudo: fixed GPT layout + baked root/user passwords (no firstlogin wizard).
+# DEPRECATED: debugfs set_inode_field corrupts ext4 inodes — use patch-rootfs-v17-mount.sh instead.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -137,22 +138,20 @@ FONTSIZE="8x16"
 VIDEOMODE=
 EOF
 
-cat >"$WORKDIR/issue" <<EOF
-RK3308BS Armbian ${IMAGE_TAG}
-Serial: auto-login ${USER_NAME} on ttyS3
-Password login: ${USER_NAME} / ${USER_PASSWORD}
-Locale: ${LOCALE} | TZ: ${TIMEZONE} | Keyboard: US
-Image stamp: /etc/rk3308bs-release
+printf '%s\n' \
+	"RK3308BS Armbian ${IMAGE_TAG}" \
+	"Serial: auto-login ${USER_NAME} on ttyS3" \
+	"Password login: ${USER_NAME} / ${USER_PASSWORD}" \
+	"Locale: ${LOCALE} | TZ: ${TIMEZONE} | Keyboard: US" \
+	"Image stamp: /etc/rk3308bs-release" \
+	"" >"$WORKDIR/issue"
 
-EOF
-
-cat >"$WORKDIR/rk3308bs-release" <<EOF
-RK3308BS_IMAGE=${IMAGE_TAG}
-RK3308BS_USER=${USER_NAME}
-RK3308BS_SERIAL_AUTOLOGIN=${USER_NAME}
-RK3308BS_LOCALE=${LOCALE}
-RK3308BS_TZ=${TIMEZONE}
-EOF
+printf '%s\n' \
+	"RK3308BS_IMAGE=${IMAGE_TAG}" \
+	"RK3308BS_USER=${USER_NAME}" \
+	"RK3308BS_SERIAL_AUTOLOGIN=${USER_NAME}" \
+	"RK3308BS_LOCALE=${LOCALE}" \
+	"RK3308BS_TZ=${TIMEZONE}" >"$WORKDIR/rk3308bs-release"
 
 echo "rk3308bs-${IMAGE_TAG}" >"$WORKDIR/hostname"
 

@@ -25,6 +25,9 @@ teraterm-log/
 .cursor/
 *.lnk
 "I,data*"
+.build-v*/
+.wsl-tmp/
+.config
 
 # Compiled DTB (rebuild from .dts)
 *.dtb

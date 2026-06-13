@@ -1,0 +1,28 @@
+  UNIT                         LOAD   ACTIVE SUB     DESCRIPTION
+  acpid.service                loaded active running ACPI event daemon
+  bluetooth.service            loaded active running Bluetooth service
+  dbus.service                 loaded active running D-Bus System Message Bus
+  dhcpcd.service               loaded active running DHCP Client Daemon
+  irqbalance.service           loaded active running irqbalance daemon
+  klipper-mcu.service          loaded active running Starts the MCU Linux firmware for klipper on startup
+  klipper.service              loaded active running Klipper 3D Printer Firmware SV1
+  makerbase-client.service     loaded active running MakerbaseClient
+  makerbase-wlan0.service      loaded active running Makerbase ws WPA supplicant daemon
+  moonraker.service            loaded active running API Server for Klipper SV1
+  nginx.service                loaded active running A high performance web server and a reverse proxy server
+  ntp.service                  loaded active running Network Time Service
+  polkit.service               loaded active running Authorization Manager
+  rsyslog.service              loaded active running System Logging Service
+  serial-getty@ttyFIQ0.service loaded active running Serial Getty on ttyFIQ0
+  ssh.service                  loaded active running OpenBSD Secure Shell server
+  systemd-journald.service     loaded active running Journal Service
+  systemd-logind.service       loaded active running User Login Management
+  systemd-udevd.service        loaded active running Rule-based Manager for Device Events and Files
+  udisks2.service              loaded active running Disk Manager
+  user@1000.service            loaded active running User Manager for UID 1000
+  xl2tpd.service               loaded active running LSB: layer 2 tunelling protocol daemon
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+22 loaded units listed.

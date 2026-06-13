@@ -53,8 +53,11 @@ If factory `.img` works on Upgrade but a custom `.img` does not, the problem is 
 |------|-------------|
 | `KLP_IMG_ARTILLERY_..._Beta.img` | **Recovery** — known-good factory |
 | `SMOKE_v2_repack_only.img` | Validate repack pipeline (factory contents) |
-| `rk3308bs-1.0.0-emmc-fixed.img` | Custom Armbian (**same as v14** — use this or `-v14.img`) |
-| `rk3308bs-1.0.0-emmc-fixed-v14.img` | **Latest** — v13 thermal + **built-in DRM (LCD)** + **no GPT resize on first boot** (reboot-safe) |
+| `rk3308bs-1.0.0-emmc-fixed.img` | Symlink/copy of **latest built** `-vNN.img` (currently **v43** if v45 not built yet) |
+| `rk3308bs-1.0.0-emmc-fixed-v43.img` | **Do not use** — rootfs baked with `debugfs set_inode_field` → `bogus i_mode` login loop |
+| `rk3308bs-1.0.0-emmc-fixed-v45.img` | **Build this next** — safe chroot + `/boot/system.cfg` (no v44 image was ever produced) |
+| `rk3308bs-1.0.0-emmc-fixed-v42.img` | Last good kernel/display before v43 rootfs patch (no WiFi grow stack) |
+| `rk3308bs-1.0.0-emmc-fixed-v14.img` | Old baseline — v13 thermal + built-in DRM, no custom WiFi/LCD module load |
 | `rk3308bs-1.0.0-emmc-fixed-v13.img` | v11 serial + factory RK3308BS TSADC — **do not use** (reboot breaks GPT; LCD blank) |
 | `rk3308bs-1.0.0-emmc-fixed-v12.img` | v11 serial + **no thermal emergency reboot** (soc-crit passive workaround) |
 | `rk3308bs-1.0.0-emmc-fixed-v11.img` | Factory DTB + ttyS3 serial — **still thermal reboot loop on 6.18** |
@@ -333,5 +336,7 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 | Silent serial / boot loop on v9–v10 | Factory DTB disables UART3 unless fiq-debugger works (Armbian 6.18 has none) — fixed in v11 |
 | `Code check error -1` | Patched uboot without LOADER hash update (v4; fixed in v7) |
 | Old `-emmc-fixed.img` | `boot.img` had `resource.img` in ramdisk slot instead of second slot → U-Boot rejects it |
+| v43 `Authentication failure` / `bogus i_mode (644)` | Rootfs corrupted by `patch-rootfs-v17-debugfs.sh`. **Full flash v45** after building (not update over grown eMMC) |
+| No v44 firmware | v44 script existed but **never built** — use `tools/build-release-v45-rootfs-only.sh` |
 | Partial flash (`total=33613312`) | Boot written but rootfs skipped; GPT may not match |
 | 9 MiB boot slot + 17 MiB boot.img | U-Boot reads truncated image → same PXE symptom |

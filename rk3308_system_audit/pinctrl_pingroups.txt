@@ -1,0 +1,656 @@
+registered pin groups:
+group: canm0-pins
+pin 11 (gpio0-11)
+pin 12 (gpio0-12)
+
+group: canm1-pins
+pin 54 (gpio1-22)
+pin 55 (gpio1-23)
+
+group: canm2-pins
+pin 66 (gpio2-2)
+pin 67 (gpio2-3)
+
+group: emmc-clk
+pin 105 (gpio3-9)
+
+group: emmc-cmd
+pin 104 (gpio3-8)
+
+group: emmc-pwren
+pin 107 (gpio3-11)
+
+group: emmc-rstn
+pin 106 (gpio3-10)
+
+group: emmc-bus1
+pin 96 (gpio3-0)
+
+group: emmc-bus4
+pin 96 (gpio3-0)
+pin 97 (gpio3-1)
+pin 98 (gpio3-2)
+pin 99 (gpio3-3)
+
+group: emmc-bus8
+pin 96 (gpio3-0)
+pin 97 (gpio3-1)
+pin 98 (gpio3-2)
+pin 99 (gpio3-3)
+pin 100 (gpio3-4)
+pin 101 (gpio3-5)
+pin 102 (gpio3-6)
+pin 103 (gpio3-7)
+
+group: ext-micbias-en
+pin 18 (gpio0-18)
+
+group: flash-csn0
+pin 109 (gpio3-13)
+
+group: flash-rdy
+pin 108 (gpio3-12)
+
+group: flash-ale
+pin 107 (gpio3-11)
+
+group: flash-cle
+pin 105 (gpio3-9)
+
+group: flash-wrn
+pin 104 (gpio3-8)
+
+group: flash-rdn
+pin 106 (gpio3-10)
+
+group: flash-bus8
+pin 96 (gpio3-0)
+pin 97 (gpio3-1)
+pin 98 (gpio3-2)
+pin 99 (gpio3-3)
+pin 100 (gpio3-4)
+pin 101 (gpio3-5)
+pin 102 (gpio3-6)
+pin 103 (gpio3-7)
+
+group: rmii-pins
+pin 49 (gpio1-17)
+pin 51 (gpio1-19)
+pin 50 (gpio1-18)
+pin 52 (gpio1-20)
+pin 53 (gpio1-21)
+pin 47 (gpio1-15)
+pin 48 (gpio1-16)
+pin 46 (gpio1-14)
+pin 45 (gpio1-13)
+
+group: mac-refclk-12ma
+pin 44 (gpio1-12)
+
+group: mac-refclk
+pin 44 (gpio1-12)
+
+group: rmiim1-pins
+pin 143 (gpio4-15)
+pin 133 (gpio4-5)
+pin 132 (gpio4-4)
+pin 130 (gpio4-2)
+pin 131 (gpio4-3)
+pin 128 (gpio4-0)
+pin 129 (gpio4-1)
+pin 142 (gpio4-14)
+pin 141 (gpio4-13)
+
+group: macm1-refclk-12ma
+pin 140 (gpio4-12)
+
+group: macm1-refclk
+pin 140 (gpio4-12)
+
+group: i2c0-xfer
+pin 56 (gpio1-24)
+pin 57 (gpio1-25)
+
+group: i2c1-xfer
+pin 11 (gpio0-11)
+pin 12 (gpio0-12)
+
+group: i2c2-xfer
+pin 66 (gpio2-2)
+pin 67 (gpio2-3)
+
+group: i2c3m0-xfer
+pin 15 (gpio0-15)
+pin 16 (gpio0-16)
+
+group: i2c3m1-xfer
+pin 108 (gpio3-12)
+pin 109 (gpio3-13)
+
+group: i2c3m2-xfer
+pin 65 (gpio2-1)
+pin 64 (gpio2-0)
+
+group: i2s-2ch-0-mclk
+pin 140 (gpio4-12)
+
+group: i2s-2ch-0-sclk
+pin 141 (gpio4-13)
+
+group: i2s-2ch-0-lrck
+pin 142 (gpio4-14)
+
+group: i2s-2ch-0-sdo
+pin 143 (gpio4-15)
+
+group: i2s-2ch-0-sdi
+pin 144 (gpio4-16)
+
+group: i2s-8ch-0-mclk
+pin 68 (gpio2-4)
+
+group: i2s-8ch-0-sclktx
+pin 69 (gpio2-5)
+
+group: i2s-8ch-0-sclkrx
+pin 70 (gpio2-6)
+
+group: i2s-8ch-0-lrcktx
+pin 71 (gpio2-7)
+
+group: i2s-8ch-0-lrckrx
+pin 72 (gpio2-8)
+
+group: i2s-8ch-0-sdo0
+pin 73 (gpio2-9)
+
+group: i2s-8ch-0-sdo1
+pin 74 (gpio2-10)
+
+group: i2s-8ch-0-sdo2
+pin 75 (gpio2-11)
+
+group: i2s-8ch-0-sdo3
+pin 76 (gpio2-12)
+
+group: i2s-8ch-0-sdi0
+pin 77 (gpio2-13)
+
+group: i2s-8ch-0-sdi1
+pin 78 (gpio2-14)
+
+group: i2s-8ch-0-sdi2
+pin 79 (gpio2-15)
+
+group: i2s-8ch-0-sdi3
+pin 80 (gpio2-16)
+
+group: i2s-8ch-1-m0-mclk
+pin 34 (gpio1-2)
+
+group: i2s-8ch-1-m0-sclktx
+pin 35 (gpio1-3)
+
+group: i2s-8ch-1-m0-sclkrx
+pin 36 (gpio1-4)
+
+group: i2s-8ch-1-m0-lrcktx
+pin 37 (gpio1-5)
+
+group: i2s-8ch-1-m0-lrckrx
+pin 38 (gpio1-6)
+
+group: i2s-8ch-1-m0-sdo0
+pin 39 (gpio1-7)
+
+group: i2s-8ch-1-m0-sdo1-sdi3
+pin 40 (gpio1-8)
+
+group: i2s-8ch-1-m0-sdo2-sdi2
+pin 41 (gpio1-9)
+
+group: i2s-8ch-1-m0-sdo3_sdi1
+pin 42 (gpio1-10)
+
+group: i2s-8ch-1-m0-sdi0
+pin 43 (gpio1-11)
+
+group: i2s-8ch-1-m1-mclk
+pin 44 (gpio1-12)
+
+group: i2s-8ch-1-m1-sclktx
+pin 45 (gpio1-13)
+
+group: i2s-8ch-1-m1-sclkrx
+pin 46 (gpio1-14)
+
+group: i2s-8ch-1-m1-lrcktx
+pin 47 (gpio1-15)
+
+group: i2s-8ch-1-m1-lrckrx
+pin 48 (gpio1-16)
+
+group: i2s-8ch-1-m1-sdo0
+pin 49 (gpio1-17)
+
+group: i2s-8ch-1-m1-sdo1-sdi3
+pin 50 (gpio1-18)
+
+group: i2s-8ch-1-m1-sdo2-sdi2
+pin 51 (gpio1-19)
+
+group: i2s-8ch-1-m1-sdo3_sdi1
+pin 52 (gpio1-20)
+
+group: i2s-8ch-1-m1-sdi0
+pin 53 (gpio1-21)
+
+group: lcdc-ctl
+pin 32 (gpio1-0)
+pin 33 (gpio1-1)
+pin 34 (gpio1-2)
+pin 35 (gpio1-3)
+pin 36 (gpio1-4)
+pin 37 (gpio1-5)
+pin 38 (gpio1-6)
+pin 39 (gpio1-7)
+pin 40 (gpio1-8)
+pin 41 (gpio1-9)
+pin 42 (gpio1-10)
+pin 43 (gpio1-11)
+pin 44 (gpio1-12)
+pin 45 (gpio1-13)
+pin 46 (gpio1-14)
+pin 47 (gpio1-15)
+pin 48 (gpio1-16)
+pin 49 (gpio1-17)
+pin 50 (gpio1-18)
+pin 51 (gpio1-19)
+pin 52 (gpio1-20)
+pin 53 (gpio1-21)
+
+group: lcdc-rgb888-m0
+pin 54 (gpio1-22)
+pin 55 (gpio1-23)
+pin 73 (gpio2-9)
+pin 74 (gpio2-10)
+pin 79 (gpio2-15)
+pin 80 (gpio2-16)
+
+group: lcdc-rgb888-m1
+pin 102 (gpio3-6)
+pin 103 (gpio3-7)
+pin 104 (gpio3-8)
+pin 105 (gpio3-9)
+pin 106 (gpio3-10)
+pin 107 (gpio3-11)
+
+group: owirem0-pins
+pin 11 (gpio0-11)
+
+group: owirem1-pins
+pin 54 (gpio1-22)
+
+group: owirem2-pins
+pin 66 (gpio2-2)
+
+group: pdm-m0-clk
+pin 36 (gpio1-4)
+
+group: pdm-m0-sdi0
+pin 43 (gpio1-11)
+
+group: pdm-m0-sdi1
+pin 42 (gpio1-10)
+
+group: pdm-m0-sdi2
+pin 41 (gpio1-9)
+
+group: pdm-m0-sdi3
+pin 40 (gpio1-8)
+
+group: pdm-m1-clk
+pin 46 (gpio1-14)
+
+group: pdm-m1-sdi0
+pin 53 (gpio1-21)
+
+group: pdm-m1-sdi1
+pin 52 (gpio1-20)
+
+group: pdm-m1-sdi2
+pin 51 (gpio1-19)
+
+group: pdm-m1-sdi3
+pin 50 (gpio1-18)
+
+group: pdm-m2-clkm
+pin 68 (gpio2-4)
+
+group: pdm-m2-clk
+pin 70 (gpio2-6)
+
+group: pdm-m2-sdi0
+pin 77 (gpio2-13)
+
+group: pdm-m2-sdi1
+pin 78 (gpio2-14)
+
+group: pdm-m2-sdi2
+pin 79 (gpio2-15)
+
+group: pdm-m2-sdi3
+pin 80 (gpio2-16)
+
+group: pwm0-pin
+pin 13 (gpio0-13)
+
+group: pwm0-pin-pull-down
+pin 13 (gpio0-13)
+
+group: pwm1-pin
+pin 14 (gpio0-14)
+
+group: pwm1-pin-pull-down
+pin 14 (gpio0-14)
+
+group: pwm2-pin
+pin 15 (gpio0-15)
+
+group: pwm2-pin-pull-down
+pin 15 (gpio0-15)
+
+group: pwm3-pin
+pin 16 (gpio0-16)
+
+group: pwm3-pin-pull-down
+pin 16 (gpio0-16)
+
+group: pwm4-pin
+pin 1 (gpio0-1)
+
+group: pwm4-pin-pull-down
+pin 1 (gpio0-1)
+
+group: pwm5-pin
+pin 17 (gpio0-17)
+
+group: pwm5-pin-pull-down
+pin 17 (gpio0-17)
+
+group: pwm6-pin
+pin 18 (gpio0-18)
+
+group: pwm6-pin-pull-down
+pin 18 (gpio0-18)
+
+group: pwm7-pin
+pin 72 (gpio2-8)
+
+group: pwm7-pin-pull-down
+pin 72 (gpio2-8)
+
+group: pwm8-pin
+pin 74 (gpio2-10)
+
+group: pwm8-pin-pull-down
+pin 74 (gpio2-10)
+
+group: pwm9-pin
+pin 75 (gpio2-11)
+
+group: pwm9-pin-pull-down
+pin 75 (gpio2-11)
+
+group: pwm10-pin
+pin 76 (gpio2-12)
+
+group: pwm10-pin-pull-down
+pin 76 (gpio2-12)
+
+group: pwm11-pin
+pin 80 (gpio2-16)
+
+group: pwm11-pin-pull-down
+pin 80 (gpio2-16)
+
+group: rtc-32k
+pin 19 (gpio0-19)
+
+group: sdmmc-clk
+pin 157 (gpio4-29)
+
+group: sdmmc-cmd
+pin 156 (gpio4-28)
+
+group: sdmmc-det
+pin 3 (gpio0-3)
+
+group: sdmmc-pwren
+pin 158 (gpio4-30)
+
+group: sdmmc-bus1
+pin 152 (gpio4-24)
+
+group: sdmmc-bus4
+pin 152 (gpio4-24)
+pin 153 (gpio4-25)
+pin 154 (gpio4-26)
+pin 155 (gpio4-27)
+
+group: sdmmc-gpio
+pin 152 (gpio4-24)
+pin 153 (gpio4-25)
+pin 154 (gpio4-26)
+pin 155 (gpio4-27)
+pin 156 (gpio4-28)
+pin 157 (gpio4-29)
+pin 158 (gpio4-30)
+
+group: sdio-clk
+pin 133 (gpio4-5)
+
+group: sdio-cmd
+pin 132 (gpio4-4)
+
+group: sdio-pwren
+pin 2 (gpio0-2)
+
+group: sdio-wrpt
+pin 1 (gpio0-1)
+
+group: sdio-intn
+pin 0 (gpio0-0)
+
+group: sdio-bus1
+pin 128 (gpio4-0)
+
+group: sdio-bus4
+pin 128 (gpio4-0)
+pin 129 (gpio4-1)
+pin 130 (gpio4-2)
+pin 131 (gpio4-3)
+
+group: sdio-gpio
+pin 128 (gpio4-0)
+pin 129 (gpio4-1)
+pin 130 (gpio4-2)
+pin 131 (gpio4-3)
+pin 132 (gpio4-4)
+pin 133 (gpio4-5)
+
+group: spdif-in
+pin 18 (gpio0-18)
+
+group: spdif-out
+pin 17 (gpio0-17)
+
+group: spi0-clk
+pin 66 (gpio2-2)
+
+group: spi0-csn0
+pin 67 (gpio2-3)
+
+group: spi0-miso
+pin 64 (gpio2-0)
+
+group: spi0-mosi
+pin 65 (gpio2-1)
+
+group: spi0-clk-hs
+pin 66 (gpio2-2)
+
+group: spi0-miso-hs
+pin 64 (gpio2-0)
+
+group: spi0-mosi-hs
+pin 65 (gpio2-1)
+
+group: spi1-clk
+pin 107 (gpio3-11)
+
+group: spi1-csn0
+pin 109 (gpio3-13)
+
+group: spi1-miso
+pin 106 (gpio3-10)
+
+group: spi1-mosi
+pin 108 (gpio3-12)
+
+group: spi1-clk-hs
+pin 107 (gpio3-11)
+
+group: spi1-miso-hs
+pin 106 (gpio3-10)
+
+group: spi1-mosi-hs
+pin 108 (gpio3-12)
+
+group: spi1m1-miso
+pin 68 (gpio2-4)
+
+group: spi1m1-mosi
+pin 69 (gpio2-5)
+
+group: spi1m1-clk
+pin 71 (gpio2-7)
+
+group: spi1m1-csn0
+pin 73 (gpio2-9)
+
+group: spi1m1-miso-hs
+pin 68 (gpio2-4)
+
+group: spi1m1-mosi-hs
+pin 69 (gpio2-5)
+
+group: spi1m1-clk-hs
+pin 71 (gpio2-7)
+
+group: spi1m1-csn0-hs
+pin 73 (gpio2-9)
+
+group: spi2-clk
+pin 56 (gpio1-24)
+
+group: spi2-csn0
+pin 57 (gpio1-25)
+
+group: spi2-miso
+pin 54 (gpio1-22)
+
+group: spi2-mosi
+pin 55 (gpio1-23)
+
+group: spi2-clk-hs
+pin 56 (gpio1-24)
+
+group: spi2-miso-hs
+pin 54 (gpio1-22)
+
+group: spi2-mosi-hs
+pin 55 (gpio1-23)
+
+group: tsadc-otp-pin
+pin 10 (gpio0-10)
+
+group: tsadc-otp-out
+pin 10 (gpio0-10)
+
+group: uart0-xfer
+pin 65 (gpio2-1)
+pin 64 (gpio2-0)
+
+group: uart0-cts
+pin 66 (gpio2-2)
+
+group: uart0-rts
+pin 67 (gpio2-3)
+
+group: uart0-rts-pin
+pin 67 (gpio2-3)
+
+group: uart1-xfer
+pin 57 (gpio1-25)
+pin 56 (gpio1-24)
+
+group: uart1-cts
+pin 54 (gpio1-22)
+
+group: uart1-rts
+pin 55 (gpio1-23)
+
+group: uart2m0-xfer
+pin 55 (gpio1-23)
+pin 54 (gpio1-22)
+
+group: uart2m1-xfer
+pin 155 (gpio4-27)
+pin 154 (gpio4-26)
+
+group: uart3-xfer
+pin 109 (gpio3-13)
+pin 108 (gpio3-12)
+
+group: uart3m1-xfer
+pin 18 (gpio0-18)
+pin 17 (gpio0-17)
+
+group: uart4-xfer
+pin 137 (gpio4-9)
+pin 136 (gpio4-8)
+
+group: uart4-cts
+pin 134 (gpio4-6)
+
+group: uart4-rts
+pin 135 (gpio4-7)
+
+group: uart4-rts-pin
+pin 135 (gpio4-7)
+
+group: usb-drv
+pin 21 (gpio0-21)
+
+group: wifi-enable-h
+pin 2 (gpio0-2)
+
+group: uart0-gpios
+pin 67 (gpio2-3)
+
+group: wifi-wake-host
+pin 0 (gpio0-0)
+
+group: green-led-gpio
+pin 6 (gpio0-6)
+
+group: heartbeat-led-gpio
+pin 5 (gpio0-5)
+
+group: pinctrl_spi1_cs0
+pin 77 (gpio2-13)
+
+group: pmic-int-l
+pin 6 (gpio0-6)
+

@@ -42,10 +42,10 @@ NETDEV="$WORKDIR/25-wlan0.network"
 WPA_UNIT="$WORKDIR/wpa-wlan0.service"
 WANTS_DROPIN="$WORKDIR/rk3308bs.conf"
 
-cat >"$SERIAL_GETTY" <<'EOF'
+cat >"$SERIAL_GETTY" <<EOF
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin root --keep-baud 115200,1500000,9600 --noclear %I $TERM
+ExecStart=-/sbin/agetty --autologin ${USER_NAME} --keep-baud 115200,1500000,9600 --noclear %I \$TERM
 Type=idle
 EOF
 
@@ -58,12 +58,15 @@ ROOT_PART=$(findmnt -n -o SOURCE /)
 DISK=/dev/$(basename "$ROOT_PART" | sed 's/p[0-9]*$//')
 PART_NUM=$(basename "$ROOT_PART" | sed -n 's/.*p\([0-9]*\)/\1/p')
 [[ -n "$PART_NUM" ]] || { echo "RK3308BS: cannot parse root partition $ROOT_PART"; exit 1; }
+# Repair any prior debugfs inode damage before expanding.
+e2fsck -fy "$ROOT_PART" || { echo "RK3308BS: e2fsck failed on $ROOT_PART"; exit 1; }
 if command -v growpart >/dev/null 2>&1; then
 	growpart "$DISK" "$PART_NUM" || parted -s "$DISK" resizepart "$PART_NUM" 100%
 else
 	parted -s "$DISK" resizepart "$PART_NUM" 100%
 fi
 resize2fs "$ROOT_PART"
+e2fsck -fy "$ROOT_PART" || true
 touch "$MARKER"
 echo "RK3308BS: rootfs grown to $(df -h / | awk 'NR==2{print $2}')"
 EOF

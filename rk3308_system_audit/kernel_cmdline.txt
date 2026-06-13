@@ -1,0 +1,1 @@
+storagemedia=emmc androidboot.storagemedia=emmc androidboot.mode=normal  androidboot.serialno=c3d9b8674f4b94f6  rw rootwait earlycon=uart8250,mmio32,0xff0d0000 console=ttyFIQ0 root=PARTUUID=614e0000-0000 rootfstype=ext4

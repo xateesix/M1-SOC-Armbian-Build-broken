@@ -1,0 +1,109 @@
+    PID    PPID CMD                         %MEM %CPU
+    887       1 /home/mks/moonraker-env/bin  8.2  6.3
+    856       1 /home/mks/klippy-env/bin/py  5.9  2.4
+   3935    3913 /usr/bin/pulseaudio --daemo  4.8  0.2
+    927     900 /home/mks/ws/build/mksclien  3.6  9.9
+    520       1 /usr/libexec/udisks2/udisks  2.0  0.0
+      1       0 /sbin/init                   1.9  0.6
+   3913       1 /lib/systemd/systemd --user  1.6  0.1
+   1372       1 /sbin/wpa_supplicant -c/etc  1.6  5.1
+    935       1 /usr/libexec/polkitd --no-d  1.6  0.0
+    513       1 /lib/systemd/systemd-logind  1.3  0.1
+   1042       1 sshd: /usr/sbin/sshd -D [li  1.3  0.0
+    167       1 /lib/systemd/systemd-journa  1.2  0.2
+   3951       1 /usr/libexec/bluetooth/blue  1.1  0.0
+    212       1 /lib/systemd/systemd-udevd   0.9  0.1
+   4535    3941 sudo -i                      0.8  0.0
+   1109       1 /bin/login -p --             0.8  0.1
+    427       1 /usr/bin/dbus-daemon --syst  0.8  0.2
+    979       1 /usr/sbin/ntpd -p /var/run/  0.7  0.0
+   4541    4535 -bash                        0.7  0.0
+    492       1 /usr/sbin/rsyslogd -n -iNON  0.7  0.1
+   3941    1109 -bash                        0.7  0.0
+   1071    1068 nginx: worker process        0.6  0.0
+   1072    1068 nginx: worker process        0.6  0.0
+   1074    1068 nginx: worker process        0.6  0.0
+   1077    1068 nginx: worker process        0.6  0.0
+   6824    4541 /bin/bash ./audit.sh         0.6  0.4
+    863       1 bash /root/mcu-id.sh         0.6  0.3
+    877       1 bash /root/auto-webcam-id.s  0.6  0.5
+    900       1 bash /home/mks/ws/start.sh   0.5  0.0
+   3917    3913 (sd-pam)                     0.5  0.0
+   6903    6824 ps -eo pid,ppid,cmd,%mem,%c  0.5  0.0
+   1068       1 nginx: master process /usr/  0.5  0.0
+    471       1 /usr/local/bin/klipper_mcu   0.3  0.2
+    511       1 /usr/sbin/dhcpcd             0.3  0.0
+    460       1 /usr/sbin/irqbalance --fore  0.2  0.0
+    411       1 /usr/sbin/acpid              0.0  0.0
+   6898     877 sleep 1                      0.0  0.0
+   6900     863 sleep 1                      0.0  0.0
+   1106       1 /usr/sbin/xl2tpd             0.0  0.0
+      2       0 [kthreadd]                   0.0  0.0
+      3       2 [rcu_gp]                     0.0  0.0
+      4       2 [rcu_par_gp]                 0.0  0.0
+      7       2 [kworker/u8:0-events_freeza  0.0  0.0
+      8       2 [mm_percpu_wq]               0.0  0.0
+      9       2 [rcu_tasks_kthre]            0.0  0.0
+     10       2 [ksoftirqd/0]                0.0  0.4
+     11       2 [rcu_preempt]                0.0  0.3
+     12       2 [migration/0]                0.0  0.0
+     13       2 [cpuhp/0]                    0.0  0.0
+     14       2 [cpuhp/1]                    0.0  0.0
+     15       2 [migration/1]                0.0  0.0
+     16       2 [ksoftirqd/1]                0.0  0.0
+     18       2 [kworker/1:0H-kblockd]       0.0  0.1
+     19       2 [cpuhp/2]                    0.0  0.0
+     20       2 [migration/2]                0.0  0.0
+     21       2 [ksoftirqd/2]                0.0  0.1
+     24       2 [cpuhp/3]                    0.0  0.0
+     25       2 [migration/3]                0.0  0.0
+     26       2 [ksoftirqd/3]                0.0  0.0
+     27       2 [kworker/3:0-events]         0.0  0.9
+     28       2 [kworker/3:0H-kblockd]       0.0  0.3
+     29       2 [kdevtmpfs]                  0.0  0.0
+     30       2 [kworker/2:1-events]         0.0  0.9
+     31       2 [kworker/1:1-cgroup_destroy  0.0  0.0
+     32       2 [kworker/0:1-events]         0.0  0.0
+     34       2 [oom_reaper]                 0.0  0.0
+     35       2 [writeback]                  0.0  0.0
+     59       2 [kblockd]                    0.0  0.0
+     60       2 [kconsole]                   0.0  0.0
+     61       2 [devfreq_wq]                 0.0  0.0
+     62       2 [watchdogd]                  0.0  0.0
+     63       2 [cfinteractive]              0.0  0.0
+     64       2 [kworker/u8:1-events_unboun  0.0  0.0
+     66       2 [cfg80211]                   0.0  0.0
+     67       2 [irq/26-rockchip]            0.0  0.0
+     96       2 [kswapd0]                    0.0  0.0
+     98       2 [irq/46-rockchip]            0.0  0.0
+     99       2 [irq/47-rockchip]            0.0  0.0
+    100       2 [irq/48-rockchip]            0.0  0.0
+    101       2 [irq/49-rockchip]            0.0  0.0
+    102       2 [kworker/1:2-events]         0.0  0.6
+    103       2 [spi1]                       0.0  0.0
+    109       2 [irq/50-gt911]               0.0  0.0
+    110       2 [ipv6_addrconf]              0.0  0.0
+    111       2 [krfcommd]                   0.0  0.0
+    114       2 [kworker/3:3-events]         0.0  0.0
+    115       2 [card0-crtc0]                0.0  0.0
+    116       2 [kworker/0:2-events]         0.0  0.7
+    122       2 [mmc_complete]               0.0  0.0
+    123       2 [kworker/0:1H-mmc_complete]  0.0  0.6
+    129       2 [jbd2/mmcblk0p6-]            0.0  1.1
+    130       2 [ext4-rsv-conver]            0.0  0.0
+    499       2 [kworker/2:3H-kblockd]       0.0  0.2
+    502       2 [kworker/0:3H-mmc_complete]  0.0  0.2
+   1374       2 [RTW_XMIT_THREAD]            0.0  0.0
+   1375       2 [RTW_CMD_THREAD]             0.0  1.4
+   1376       2 [RTWHALXT]                   0.0  0.0
+   4517       2 [kworker/2:0-events]         0.0  0.0
+   4573       2 [kworker/1:1H-kblockd]       0.0  0.1
+   4639       2 [kworker/2:0H]               0.0  0.0
+   4793       2 [kworker/3:1H]               0.0  0.0
+   5583       2 [kworker/0:0H-mmc_complete]  0.0  0.0
+   5881       2 [kworker/1:0-events]         0.0  1.0
+   6157       2 [kworker/2:1H-kblockd]       0.0  0.3
+   6170       2 [kworker/2:2-events]         0.0  1.4
+   6714       2 [kworker/u8:2-ext4-rsv-conv  0.0  0.5
+   6725       2 [kworker/3:2H]               0.0  0.0
+   6864       2 [kworker/1:2H-kblockd]       0.0  4.5
