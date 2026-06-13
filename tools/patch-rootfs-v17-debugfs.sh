@@ -25,7 +25,7 @@ TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
 ROOT_HASH="$(openssl passwd -6 "$ROOT_PASSWORD")"
 USER_HASH="$(openssl passwd -6 "$USER_PASSWORD")"
 
-WORKDIR="$(mktemp -d)"
+WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/rk3308bs-rootfs.XXXXXX")"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 DST="$WORKDIR/rootfs.img"
@@ -119,10 +119,29 @@ LC_ALL=${LOCALE}
 EOF
 echo "$TIMEZONE" >"$WORKDIR/timezone"
 
+cat >"$WORKDIR/default.keyboard" <<'EOF'
+# US English keyboard (baked at image build — no console-setup wizard)
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+
+cat >"$WORKDIR/console-setup" <<'EOF'
+ACTIVE_CONSOLES="/dev/tty[1-6]"
+CHARMAP="UTF-8"
+CODESET="Uni2"
+FONTFACE="Fixed"
+FONTSIZE="8x16"
+VIDEOMODE=
+EOF
+
 cat >"$WORKDIR/issue" <<EOF
 RK3308BS Armbian ${IMAGE_TAG}
 Serial: auto-login ${USER_NAME} on ttyS3
 Password login: ${USER_NAME} / ${USER_PASSWORD}
+Locale: ${LOCALE} | TZ: ${TIMEZONE} | Keyboard: US
 Image stamp: /etc/rk3308bs-release
 
 EOF
@@ -131,6 +150,8 @@ cat >"$WORKDIR/rk3308bs-release" <<EOF
 RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
 RK3308BS_SERIAL_AUTOLOGIN=${USER_NAME}
+RK3308BS_LOCALE=${LOCALE}
+RK3308BS_TZ=${TIMEZONE}
 EOF
 
 echo "rk3308bs-${IMAGE_TAG}" >"$WORKDIR/hostname"
@@ -142,7 +163,7 @@ ExecStart=-/sbin/agetty --autologin ${USER_NAME} --keep-baud 115200,1500000,9600
 Type=idle
 EOF
 
-for f in shadow.new passwd.new group.new gshadow.new subuid.new subgid.new locale.gen default.locale timezone issue rk3308bs-release hostname serial-autologin.conf; do
+for f in shadow.new passwd.new group.new gshadow.new subuid.new subgid.new locale.gen default.locale timezone default.keyboard console-setup issue rk3308bs-release hostname serial-autologin.conf; do
 	[[ -f "$WORKDIR/$f" ]] && sed -i 's/\r$//' "$WORKDIR/$f"
 done
 
@@ -168,6 +189,10 @@ rm /etc/locale.gen
 write $WORKDIR/locale.gen /etc/locale.gen
 rm /etc/timezone
 write $WORKDIR/timezone /etc/timezone
+rm /etc/default/keyboard
+write $WORKDIR/default.keyboard /etc/default/keyboard
+rm /etc/default/console-setup
+write $WORKDIR/console-setup /etc/default/console-setup
 rm /etc/issue
 write $WORKDIR/issue /etc/issue
 rm /etc/rk3308bs-release
@@ -183,8 +208,10 @@ write $WORKDIR/serial-autologin.conf /etc/systemd/system/serial-getty@ttyS3.serv
 rm /etc/profile.d/armbian-check-first-login.sh
 rm /etc/profile.d/armbian-check-first-login-reboot.sh
 rm /etc/systemd/system/multi-user.target.wants/armbian-firstrun.service
+rm /etc/systemd/system/multi-user.target.wants/armbian-firstlogin.service
 cd /etc/systemd/system
 symlink /dev/null armbian-firstrun.service
+symlink /dev/null armbian-firstlogin.service
 unlink /etc/systemd/system/basic.target.wants/armbian-resize-filesystem.service
 symlink /dev/null armbian-resize-filesystem.service
 mkdir /home/${USER_NAME}

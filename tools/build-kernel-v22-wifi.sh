@@ -20,6 +20,7 @@ patch -p1 --forward < "$REPO/patches/0004-panel-simple-simple-panel-compat.patch
 patch -p1 --forward < "$REPO/patches/0005-rk3308-rgb-platform-driver.patch"
 patch -p1 --forward < "$REPO/patches/0006-panel-dpi-bus-format.patch"
 patch -p1 --forward < "$REPO/patches/0007-panel-dpi-probe-complete.patch"
+patch -p1 --forward < "$REPO/patches/0008-panel-dpi-no-pm-runtime.patch"
 
 bash "$TOOLS/integrate-rtl8189fs.sh" "$SRC" "$AB"
 

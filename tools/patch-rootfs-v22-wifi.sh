@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rootfs: Armbian firstrun + OurIOT WiFi + grow rootfs + wpa_supplicant/networkd at boot.
+# Rootfs: WiFi + grow rootfs + networkd/wpa (no Armbian firstrun — credentials from v17 patch).
 # NEVER use debugfs set_inode_field (corrupts ext4 inodes).
 set -euo pipefail
 
@@ -23,7 +23,7 @@ LOCALE="${LOCALE:-en_US.UTF-8}"
 TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
 WIFI_COUNTRY="${WIFI_COUNTRY:-US}"
 
-WORKDIR="$(mktemp -d)"
+WORKDIR="$(mktemp -d "${TMPDIR:-/tmp}/rk3308bs-wifi.XXXXXX")"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 DST="$WORKDIR/rootfs.img"
@@ -31,7 +31,6 @@ cp "$SRC" "$DST"
 
 NO_RESIZE="$WORKDIR/no_rootfs_resize"
 : >"$NO_RESIZE"
-FIRSTBOOT="$WORKDIR/not_logged_in_yet"
 SERIAL_GETTY="$WORKDIR/serial-root-autologin.conf"
 RELEASE="$WORKDIR/rk3308bs-release"
 ISSUE="$WORKDIR/issue"
@@ -42,27 +41,6 @@ WPA_CONF="$WORKDIR/wpa_supplicant-wlan0.conf"
 NETDEV="$WORKDIR/25-wlan0.network"
 WPA_UNIT="$WORKDIR/wpa-wlan0.service"
 WANTS_DROPIN="$WORKDIR/rk3308bs.conf"
-
-{
-	echo "# RK3308BS — Armbian non-interactive first boot + WiFi"
-	echo "PRESET_ROOT_PASSWORD=\"$ROOT_PASSWORD\""
-	echo "PRESET_USER_NAME=\"$USER_NAME\""
-	echo "PRESET_USER_PASSWORD=\"$USER_PASSWORD\""
-	echo "PRESET_DEFAULT_REALNAME=\"$USER_REALNAME\""
-	echo "PRESET_LOCALE=\"$LOCALE\""
-	echo "PRESET_TIMEZONE=\"$TIMEZONE\""
-	echo "SET_LANG_BASED_ON_LOCATION=\"n\""
-	echo "PRESET_CONNECT_WIRELESS=\"n\""
-	if [[ -n "${WIFI_SSID:-}" && -n "${WIFI_PASSWORD:-}" ]]; then
-		echo "PRESET_NET_CHANGE_DEFAULTS=\"1\""
-		echo "PRESET_NET_WIFI_ENABLED=\"1\""
-		echo "PRESET_NET_WIFI_SSID=\"$WIFI_SSID\""
-		echo "PRESET_NET_WIFI_KEY=\"$WIFI_PASSWORD\""
-		echo "PRESET_NET_WIFI_COUNTRYCODE=\"$WIFI_COUNTRY\""
-	else
-		echo "PRESET_NET_CHANGE_DEFAULTS=\"0\""
-	fi
-} >"$FIRSTBOOT"
 
 cat >"$SERIAL_GETTY" <<'EOF'
 [Service]
@@ -95,13 +73,13 @@ cat >"$GROW_UNIT" <<'EOF'
 Description=RK3308BS grow rootfs to fill eMMC
 DefaultDependencies=no
 After=local-fs.target
-Before=armbian-firstrun.service
 ConditionPathExists=!/root/.rk3308bs_rootfs_grown
 
 [Service]
 Type=oneshot
 ExecStart=/bin/bash /usr/local/sbin/rk3308bs-grow-rootfs.sh
 RemainAfterExit=yes
+TimeoutStartSec=300
 
 [Install]
 WantedBy=multi-user.target
@@ -132,8 +110,7 @@ cat >"$WPA_UNIT" <<'EOF'
 Description=WPA supplicant for wlan0 (RK3308BS)
 DefaultDependencies=no
 After=local-fs.target rk3308bs-wifi-modules.service
-Before=armbian-firstrun.service network-pre.target systemd-networkd.service
-Wants=rk3308bs-wifi-modules.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=simple
@@ -145,32 +122,47 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
+WPA_TIMER="$WORKDIR/wpa-wlan0.timer"
+cat >"$WPA_TIMER" <<'EOF'
+[Unit]
+Description=RK3308BS delayed WPA supplicant (after WiFi modules)
+
+[Timer]
+OnBootSec=25s
+Unit=wpa-wlan0.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
 cat >"$WANTS_DROPIN" <<'EOF'
 [Unit]
-Wants=rk3308bs-grow-rootfs.service rk3308bs-display-modules.service rk3308bs-wifi-modules.service wpa-wlan0.service
+Wants=rk3308bs-grow-rootfs.service rk3308bs-wifi-modules.service
 EOF
 
 cat >"$RELEASE" <<EOF
 RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
 RK3308BS_WIFI=${WIFI_SSID:-none}
+RK3308BS_LOCALE=${LOCALE}
+RK3308BS_TZ=${TIMEZONE}
 RK3308BS_ROOTFS_GROW=oneshot
 RK3308BS_LCD=480x272-rgb
 EOF
 
 cat >"$ISSUE" <<EOF
 RK3308BS Armbian ${IMAGE_TAG}
-LCD 480x272 | WiFi: ${WIFI_SSID:-off} | User: ${USER_NAME}
-First boot grows rootfs to ~6GB eMMC
+User: ${USER_NAME} | WiFi: ${WIFI_SSID:-off} | TZ: ${TIMEZONE}
+Locale: ${LOCALE} | Keyboard: US
 Verify: cat /etc/rk3308bs-release
 
 EOF
 
 echo "rk3308bs-${IMAGE_TAG}" >"$HOSTNAME"
 
-for f in not_logged_in_yet serial-root-autologin.conf rk3308bs-release issue hostname \
+for f in serial-root-autologin.conf rk3308bs-release issue hostname \
 	rk3308bs-grow-rootfs.sh rk3308bs-grow-rootfs.service wpa_supplicant-wlan0.conf \
-	25-wlan0.network wpa-wlan0.service rk3308bs.conf; do
+	25-wlan0.network wpa-wlan0.service wpa-wlan0.timer rk3308bs.conf; do
 	[[ -f "$WORKDIR/$f" ]] && sed -i 's/\r$//' "$WORKDIR/$f"
 done
 
@@ -178,7 +170,6 @@ CMD="$WORKDIR/debugfs.cmd"
 cat >"$CMD" <<EOF
 write $NO_RESIZE /root/.no_rootfs_resize
 rm /root/.not_logged_in_yet
-write $FIRSTBOOT /root/.not_logged_in_yet
 rm /etc/rk3308bs-release
 write $RELEASE /etc/rk3308bs-release
 rm /etc/issue
@@ -196,11 +187,20 @@ write $WPA_CONF /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
 mkdir /etc/systemd/network
 write $NETDEV /etc/systemd/network/25-wlan0.network
 write $WPA_UNIT /etc/systemd/system/wpa-wlan0.service
+write $WPA_TIMER /etc/systemd/system/wpa-wlan0.timer
 mkdir /etc/systemd/system/multi-user.target.d
 write $WANTS_DROPIN /etc/systemd/system/multi-user.target.d/rk3308bs.conf
+rm /etc/profile.d/armbian-check-first-login.sh
+rm /etc/profile.d/armbian-check-first-login-reboot.sh
+unlink /etc/systemd/system/multi-user.target.wants/armbian-firstrun.service
+unlink /etc/systemd/system/multi-user.target.wants/armbian-firstlogin.service
 unlink /etc/systemd/system/basic.target.wants/armbian-resize-filesystem.service
 cd /etc/systemd/system
+symlink /dev/null armbian-firstrun.service
+symlink /dev/null armbian-firstlogin.service
 symlink /dev/null armbian-resize-filesystem.service
+mkdir /etc/systemd/system/timers.target.wants
+ln /etc/systemd/system/wpa-wlan0.timer /etc/systemd/system/timers.target.wants/wpa-wlan0.timer
 quit
 EOF
 

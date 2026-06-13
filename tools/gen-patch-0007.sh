@@ -8,7 +8,8 @@ python3 "$REPO/tools/gen-panel-simple-patch.py"
 patch -p1 --forward < "$REPO/patches/0006-panel-dpi-bus-format.patch"
 cp "$PANEL" /tmp/panel-after-0006.c
 python3 "$REPO/tools/gen-patch-0007.py"
-diff -u /tmp/panel-after-0006.c "$PANEL" | sed '1s|--- /tmp/panel-after-0006.c|--- a/drivers/gpu/drm/panel/panel-simple.c|;2s|+++ .*panel-simple.c|+++ b/drivers/gpu/drm/panel/panel-simple.c|' > "$REPO/patches/0007-panel-dpi-probe-complete.patch"
+# diff exits 1 when files differ; do not abort under set -e
+diff -u /tmp/panel-after-0006.c "$PANEL" | sed '1s|--- /tmp/panel-after-0006.c|--- a/drivers/gpu/drm/panel/panel-simple.c|;2s|+++ .*panel-simple.c|+++ b/drivers/gpu/drm/panel/panel-simple.c|' > "$REPO/patches/0007-panel-dpi-probe-complete.patch" || true
 echo "lines: $(wc -l < "$REPO/patches/0007-panel-dpi-probe-complete.patch")"
 # verify
 git checkout -f v6.18

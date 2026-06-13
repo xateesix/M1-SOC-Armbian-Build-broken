@@ -33,6 +33,20 @@ t = t.replace(
 )
 
 t = t.replace(
+    "\tpanel->supply = devm_regulator_get_optional(dev, \"power\");\n"
+    "\tif (IS_ERR(panel->supply))\n"
+    "\t\treturn ERR_CAST(panel->supply);",
+    "\tpanel->supply = devm_regulator_get_optional(dev, \"power\");\n"
+    "\tif (IS_ERR(panel->supply)) {\n"
+    "\t\tif (PTR_ERR(panel->supply) == -ENODEV)\n"
+    "\t\t\tpanel->supply = NULL;\n"
+    "\t\telse\n"
+    "\t\t\treturn ERR_CAST(panel->supply);\n"
+    "\t}",
+    1,
+)
+
+t = t.replace(
     "\tpanel->enable_gpio = devm_gpiod_get_optional(dev, \"enable\",\n"
     "\t\t\t\t\t\t     GPIOD_OUT_LOW);\n"
     "\tif (IS_ERR(panel->enable_gpio))\n"
