@@ -27,7 +27,7 @@ sudo_cmd() {
 }
 
 if ! sudo_cmd true; then
-	echo "WARN: sudo unavailable — loop mount install skipped"
+	echo "WARN: sudo unavailable  -  loop mount install skipped"
 	exit 1
 fi
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Apply serial console getty inside a mounted rootfs (called from patch-rootfs-*-mount.sh).
-# RK3308BS: UART3 header @ 1500000 — console device is ttyFIQ0 (factory fiq-debugger).
+# RK3308BS: UART3 header @ 1500000  -  console device is ttyFIQ0 (factory fiq-debugger).
 set -euo pipefail
 
 MNT="${1:?mount point}"

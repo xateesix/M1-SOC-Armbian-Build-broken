@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Patch rootfs without sudo: fixed GPT layout + baked root/user passwords (no firstlogin wizard).
-# DEPRECATED: debugfs set_inode_field corrupts ext4 inodes — use patch-rootfs-v17-mount.sh instead.
+# DEPRECATED: debugfs set_inode_field corrupts ext4 inodes  -  use patch-rootfs-v17-mount.sh instead.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -121,7 +121,7 @@ EOF
 echo "$TIMEZONE" >"$WORKDIR/timezone"
 
 cat >"$WORKDIR/default.keyboard" <<'EOF'
-# US English keyboard (baked at image build — no console-setup wizard)
+# US English keyboard (baked at image build  -  no console-setup wizard)
 XKBMODEL="pc105"
 XKBLAYOUT="us"
 XKBVARIANT=""

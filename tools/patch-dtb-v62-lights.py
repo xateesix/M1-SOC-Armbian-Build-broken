@@ -1,8 +1,8 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Enable white LED light bar (PWM0) on factory RK3308 DTB.
 
 Light bar: LED +/- header, PWM0 @ ff160000 (GPIO0_B5 / gpio line 13).
-NeoPixel DATA: GPIO0_A1 (gpio line 1) on 3-pin header — userspace test script.
+NeoPixel DATA: GPIO0_A1 (gpio line 1) on 3-pin header  -  userspace test script.
 """
 from __future__ import annotations
 

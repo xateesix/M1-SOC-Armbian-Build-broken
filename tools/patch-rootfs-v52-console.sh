@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Repatch rootfs: ttyS3 getty + multi-user default (no ttyFIQ0 wait).
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +12,7 @@ trap cleanup EXIT
 sudo mkdir -p "$MNT_WORK"
 sudo mount -o loop "$OUT" "$MNT_WORK"
 sudo ln -sf /lib/systemd/system/multi-user.target "$MNT_WORK/etc/systemd/system/default.target"
-# Broken copies (not symlinks) in wants/ confuse systemd — remove.
+# Broken copies (not symlinks) in wants/ confuse systemd  -  remove.
 sudo rm -f "$MNT_WORK/etc/systemd/system/timers.target.wants/rk3308bs-display-modules.timer"
 sudo rm -f "$MNT_WORK/etc/systemd/system/multi-user.target.wants/rk3308bs-wifi-modules.service"
 sudo chmod 644 "$MNT_WORK/etc/systemd/system/rk3308bs-wifi-modules.service" 2>/dev/null || true

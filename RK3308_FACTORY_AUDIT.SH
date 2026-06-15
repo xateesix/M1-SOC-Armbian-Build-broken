@@ -1,5 +1,5 @@
 #!/bin/bash
-# RK3308 factory-vs-Armbian audit — run ON THE BOARD (SSH or serial shell).
+# RK3308 factory-vs-Armbian audit  -  run ON THE BOARD (SSH or serial shell).
 # Collects boot chain, console, GPIO/PWM/display/LEDs, and device-tree facts
 # needed to compare against factory_fresh/ extraction and Armbian DTS.
 #
@@ -74,7 +74,7 @@ section() {
 }
 
 : > "$OUTPUT_DIR/REPORT.txt"
-log "RK3308 factory audit — $(date -Is 2>/dev/null || date)"
+log "RK3308 factory audit  -  $(date -Is 2>/dev/null || date)"
 log "hostname: $(hostname 2>/dev/null || echo unknown)"
 log "output:   $(pwd)/${OUTPUT_DIR}/"
 
@@ -171,7 +171,7 @@ if compgen -G "/sys/class/gpio/gpiochip*" >/dev/null; then
         log "  $(tail -1 "$OUTPUT_DIR/gpio_chips.txt")"
     done
 else
-    log "  (no gpiochip nodes — kernel may use chardev GPIO only)"
+    log "  (no gpiochip nodes  -  kernel may use chardev GPIO only)"
 fi
 
 if command -v gpiodetect >/dev/null 2>&1; then
@@ -239,7 +239,7 @@ if compgen -G "/sys/class/pwm/pwmchip*" >/dev/null; then
         done
     done
 else
-    log "  (no pwmchip — PWM may be driver-only or disabled in DT)"
+    log "  (no pwmchip  -  PWM may be driver-only or disabled in DT)"
 fi
 
 log ""
@@ -253,8 +253,8 @@ dt_nodes_by_compatible 'pwm-backlight' "$OUTPUT_DIR/dt_pwm_backlight.txt"
 log "  pwm-backlight:"
 while read -r line; do log "    $line"; done < "$OUTPUT_DIR/dt_pwm_backlight.txt" 2>/dev/null || true
 dt_nodes_by_compatible 'pwm-leds' "$OUTPUT_DIR/dt_pwm_leds.txt"
-log "  pwm-leds (external 3-pin RGB header — often disabled):"
-while read -r line; do log "    $line"; done < "$OUTPUT_DIR/dt_pwm_leds.txt" 2>/dev/null || log "    (none — header may be unused)"
+log "  pwm-leds (external 3-pin RGB header  -  often disabled):"
+while read -r line; do log "    $line"; done < "$OUTPUT_DIR/dt_pwm_leds.txt" 2>/dev/null || log "    (none  -  header may be unused)"
 
 grep -Ei 'pwm|backlight|vdd_core|regulator' "$OUTPUT_DIR/dmesg_full.txt" 2>/dev/null \
     | head -25 | tee "$OUTPUT_DIR/dmesg_pwm.txt" >/dev/null
@@ -329,7 +329,7 @@ if compgen -G "/sys/class/leds/*" >/dev/null; then
         esac
     done
 else
-    log "  (no /sys/class/leds entries — LED drivers may be missing/disabled)"
+    log "  (no /sys/class/leds entries  -  LED drivers may be missing/disabled)"
 fi
 
 log ""
@@ -377,7 +377,7 @@ log ""
 log "dmesg devices (touch/audio/usb):"
 while read -r line; do log "  $line"; done < "$OUTPUT_DIR/dmesg_devices.txt" 2>/dev/null || true
 
-section "13) PINCTRL (pin mux for UART/RGB/LED — needs root + debugfs)"
+section "13) PINCTRL (pin mux for UART/RGB/LED  -  needs root + debugfs)"
 if [[ -d /sys/kernel/debug/pinctrl ]]; then
     for pdir in /sys/kernel/debug/pinctrl/*/; do
         [[ -d "$pdir" ]] || continue
@@ -395,10 +395,10 @@ else
     log "pinctrl: skipped (run as root; needs debugfs mounted)"
 fi
 
-section "14) CHECKLIST — compare to factory_fresh + dts/rk3308bs-evb-amic-v11.dts"
+section "14) CHECKLIST  -  compare to factory_fresh + dts/rk3308bs-evb-amic-v11.dts"
 log "Boot / console:"
 log "  [ ] model = RK3308B-S evb analog mic v11"
-log "  [ ] console=ttyFIQ0 (factory) — not ttyS3 unless DT disables fiq-debugger"
+log "  [ ] console=ttyFIQ0 (factory)  -  not ttyS3 unless DT disables fiq-debugger"
 log "  [ ] root=PARTUUID=614e0000-0000 on mmcblk0p6"
 log ""
 log "GPIO / LEDs (board-specific):"
@@ -408,9 +408,9 @@ log "  [ ] external LED +/- header uses same GPIOs as onboard leds"
 log "  [ ] 3-pin RGB header: pwm-leds often DISABLED in factory (check dt_pwm_leds.txt)"
 log ""
 log "PWM:"
-log "  [ ] pwm@ff180000 (PWM8) okay — CPU vdd_core regulator"
-log "  [ ] pwm@ff180010 (PWM9) okay — LCD backlight"
-log "  [ ] pwm@ff160000–ff170030 mostly disabled in factory"
+log "  [ ] pwm@ff180000 (PWM8) okay  -  CPU vdd_core regulator"
+log "  [ ] pwm@ff180010 (PWM9) okay  -  LCD backlight"
+log "  [ ] pwm@ff160000 - ff170030 mostly disabled in factory"
 log ""
 log "Display:"
 log "  [ ] vop@ff2e0000 + rgb status okay"
@@ -419,7 +419,7 @@ log "  [ ] dmesg: rockchip-drm initialized, fb0 ~480x272"
 log "  [ ] panel enable GPIO1_A3, reset GPIO0_C4"
 log ""
 log "If LEDs/display work on factory but fail after Armbian flash,"
-log "compare sections 8–11 against your Armbian DTS (pinctrl, &rgb, &pwm8/9, leds)."
+log "compare sections 8 - 11 against your Armbian DTS (pinctrl, &rgb, &pwm8/9, leds)."
 
 section "DONE"
 log "Files written under: $(pwd)/${OUTPUT_DIR}/"

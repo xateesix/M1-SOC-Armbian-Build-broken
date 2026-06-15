@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Repack v43 rootfs/boot only (reuse existing v43 kernel with patch 0008).
-# WARNING: uses patch-rootfs-v17-debugfs.sh — corrupts ext4 inodes (bogus i_mode login loop).
+# WARNING: uses patch-rootfs-v17-debugfs.sh  -  corrupts ext4 inodes (bogus i_mode login loop).
 # Do NOT flash for new installs. Use build-release-v45-rootfs-only.sh instead.
 set -euo pipefail
 echo "WARNING: v43 rootfs patch uses debugfs set_inode_field (known corrupt). Prefer v45." >&2
@@ -13,7 +13,7 @@ export TMPDIR
 mkdir -p "$TMPDIR" "$BUILD_DIR"
 export RK3308BS_IMAGE_TAG="v43-wifi-display-grow"
 
-[[ -f "$REL/_Image-v22" ]] || { echo "Missing kernel Image — run build-release-v43.sh first"; exit 1; }
+[[ -f "$REL/_Image-v22" ]] || { echo "Missing kernel Image  -  run build-release-v43.sh first"; exit 1; }
 
 bash "$TOOLS/patch-rootfs-v17-debugfs.sh" "$REL/rootfs-v11.img" "$BUILD_DIR/rootfs-v17.img"
 bash "$TOOLS/patch-rootfs-v22-wifi.sh" "$BUILD_DIR/rootfs-v17.img" "$BUILD_DIR/rootfs-patched.img"

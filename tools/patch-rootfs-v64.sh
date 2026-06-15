@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # v64 rootfs: v61 base + lights/neopixel/sd test tools + Armbian MOTD + leds-pwm.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -69,7 +69,7 @@ for pam in login sshd; do
     echo "session    optional     pam_motd.so" | sudo tee -a "$MNT/etc/pam.d/$pam" >/dev/null
   fi
 done
-# broken armbian-quotes cron (exit 6) — disable until network quotes work
+# broken armbian-quotes cron (exit 6)  -  disable until network quotes work
 sudo rm -f "$MNT/etc/cron.daily/armbian-quotes" 2>/dev/null || true
 
 # --- quick test hints on login ---

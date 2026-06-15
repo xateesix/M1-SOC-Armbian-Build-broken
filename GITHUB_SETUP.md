@@ -9,7 +9,7 @@ If you want to sync your Armbian build setup across devices or collaborate, use 
 Go to https://github.com/new
 
 - **Repository name**: `rk3308bs-armbian` (or your preference)
-- **Private**: ✓ (recommended for board configs)
+- **Private**: [OK] (recommended for board configs)
 - **Initialize with**: None (we'll push our files)
 
 Copy the HTTPS URL: `https://github.com/YOUR_USER/rk3308bs-armbian.git`

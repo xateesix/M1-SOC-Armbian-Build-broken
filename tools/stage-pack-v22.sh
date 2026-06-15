@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stage v22 pack: explicit rootfs partition (RKDevTool-safe), boot size from boot.img.
-# Do NOT use rootfs:grow in parameter.txt — RKDevTool leaves rootfs unwritten/corrupt.
+# Do NOT use rootfs:grow in parameter.txt  -  RKDevTool leaves rootfs unwritten/corrupt.
 # eMMC grow is handled on first boot by rk3308bs-grow-rootfs.service.
 set -euo pipefail
 REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"

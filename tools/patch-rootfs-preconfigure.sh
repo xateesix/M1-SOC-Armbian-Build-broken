@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Patch an ext4 rootfs.img: locale, timezone, users, WiFi — no first-boot wizard.
+# Patch an ext4 rootfs.img: locale, timezone, users, WiFi  -  no first-boot wizard.
 # Run in WSL with sudo (loop mount + chroot).
 #
 # Usage:

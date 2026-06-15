@@ -17,7 +17,7 @@ TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
 
 mkdir -p "$(dirname "$OUT")"
 cat >"$OUT" <<EOF
-# Generated from config.env — copied to /root/.not_logged_in_yet at image build time.
+# Generated from config.env  -  copied to /root/.not_logged_in_yet at image build time.
 # Armbian firstlogin reads these PRESET_* vars and skips interactive prompts.
 PRESET_ROOT_PASSWORD="$ROOT_PASSWORD"
 PRESET_USER_NAME="$USER_NAME"

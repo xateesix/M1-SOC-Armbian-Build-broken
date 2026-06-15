@@ -9,7 +9,7 @@ CONFIG="$SCRIPT_DIR/config.env"
 # shellcheck source=/dev/null
 source "$CONFIG"
 
-echo "=== v20 release (ttyS3 autologin fix — no baud drop-in conflict) ==="
+echo "=== v20 release (ttyS3 autologin fix  -  no baud drop-in conflict) ==="
 
 [[ -f "$REL/_Image-v16" ]] || bash "$TOOLS/build-kernel-v16-stable.sh"
 [[ -f "$REL/_boot-v16.img" ]] || bash "$TOOLS/build-boot-v16.sh"

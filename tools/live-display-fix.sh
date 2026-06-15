@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run ON the RK3308BS (or via: plink root@IP 'bash -s' < live-display-fix.sh)
-# Fixes v36 loader bug, brings up DRM stack, tries panel bind — no reflash needed.
+# Fixes v36 loader bug, brings up DRM stack, tries panel bind  -  no reflash needed.
 set -eo pipefail
 
 M=/usr/lib/modules/$(uname -r)/kernel
@@ -89,7 +89,7 @@ ls -la /sys/class/graphics/ 2>&1
 ls -la /sys/bus/platform/drivers/panel-simple/ 2>&1
 
 if [[ -c /dev/fb0 ]]; then
-	log "fb0 exists — test pattern"
+	log "fb0 exists  -  test pattern"
 	dd if=/dev/urandom of=/dev/fb0 bs=4096 count=64 status=none 2>/dev/null && log "wrote noise to fb0" || log "fb0 write failed"
 fi
 

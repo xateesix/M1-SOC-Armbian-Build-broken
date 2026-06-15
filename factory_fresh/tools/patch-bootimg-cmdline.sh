@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copy a Rockchip boot.img and patch the 512-byte cmdline field (default offset 0x50).
-# Factory images keep LZ4 kernel + resource.img intact — do NOT use mkbootimg here.
+# Factory images keep LZ4 kernel + resource.img intact  -  do NOT use mkbootimg here.
 set -euo pipefail
 
 SRC="${1:?usage: patch-bootimg-cmdline.sh SRC.img DST.img \"cmdline\" [offset]}"

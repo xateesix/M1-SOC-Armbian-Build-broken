@@ -16,7 +16,7 @@ ROOTFS="$REL/rootfs-v16.img"
 if bash "$TOOLS/install-kernel-modules-to-rootfs.sh" "$REL/rootfs-v15.img" "$ROOTFS" 2>/dev/null; then
   echo "Installed matching 6.18.0-dirty kernel modules for LCD"
 else
-  echo "WARN: no sudo — using rootfs without kernel modules (serial OK, LCD may stay blank)"
+  echo "WARN: no sudo  -  using rootfs without kernel modules (serial OK, LCD may stay blank)"
   cp "$REL/rootfs-v15.img" "$ROOTFS"
 fi
 

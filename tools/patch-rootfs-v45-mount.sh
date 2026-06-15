@@ -124,7 +124,7 @@ done
 
 SYSTEM_CFG="$WORKDIR/system.cfg"
 cat >"$SYSTEM_CFG" <<EOF
-# RK3308BS — edit on PC, reboot to apply (see /boot/scripts/boot.log)
+# RK3308BS  -  edit on PC, reboot to apply (see /boot/scripts/boot.log)
 check_interval=30
 wlan=wlan0
 hostname='${HOSTNAME}'

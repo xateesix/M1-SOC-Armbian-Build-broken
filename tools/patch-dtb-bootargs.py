@@ -166,7 +166,7 @@ def main() -> int:
     ap.add_argument(
         "--armbian-serial",
         action="store_true",
-        help="Legacy: disable fiq-debugger and use ttyS3 (do not use on RK3308BS — console is ttyFIQ0)",
+        help="Legacy: disable fiq-debugger and use ttyS3 (do not use on RK3308BS  -  console is ttyFIQ0)",
     )
     ap.add_argument(
         "--disable-thermal-critical",

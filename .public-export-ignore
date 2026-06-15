@@ -1,0 +1,22 @@
+# Excluded from public export (private repo only)
+config.env
+releases/
+*.log
+.build-v*/
+.wsl-tmp/
+teraterm-log/
+tools/_*
+tools/__pycache__/
+tools/verify-rootfs-password.sh
+tools/probe-device.sh
+tools/run_rk_diag_ssh.sh
+tools/pack-release-v29-only.sh
+tools/pack-v55-via-ssh.ps1
+tools/trigger-windows-pack.sh
+tools/run-logo-v56.py
+tools/_deploy_remote.py
+tools/_fetch_remote.py
+tools/_remote_check.py
+tools/_patch_remote.py
+tools/_test_notify.py
+tools/create-github-release.ps1

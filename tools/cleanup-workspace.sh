@@ -18,7 +18,7 @@ rm -rf "$ARMBIAN/_factory_ref" "$ARMBIAN/_fixed_check" "$ARMBIAN/_v2_check" \
 	"$ARMBIAN/KLP_IMG_ARTILLERY_M1_PRO_S1-SOC_20251126_Beta (1)" \
 	"$ARMBIAN/KLP_IMG_ARTILLERY_M1_PRO_S1-SOC_20251126_Beta (1).zip" 2>/dev/null || true
 
-[[ -d "$REL" ]] || { echo "No $REL — done"; exit 0; }
+[[ -d "$REL" ]] || { echo "No $REL  -  done"; exit 0; }
 
 # Keep these local flash/build artifacts only
 KEEP_FLASH=(

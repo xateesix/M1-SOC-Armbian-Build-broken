@@ -19,7 +19,7 @@ apt-get install -y -qq --no-install-recommends \
 systemctl enable NetworkManager.service 2>/dev/null || true
 systemctl enable wpa_supplicant.service 2>/dev/null || true
 
-# Console: Armbian 6.18 has no fiq-debugger — use raw UART3 (ttyS3 @ 1500000).
+# Console: Armbian 6.18 has no fiq-debugger  -  use raw UART3 (ttyS3 @ 1500000).
 # Factory DTB keeps OTP/thermal; fiq-debugger disabled at pack time (--armbian-serial).
 mkdir -p /etc/systemd/system/serial-getty@ttyS3.service.d
 cat >/etc/systemd/system/serial-getty@ttyS3.service.d/baud1500000.conf <<'EOF'
@@ -37,7 +37,7 @@ Display: 480x272 RGB + Goodix GT911 (i2c-3/0x5d)
 LCD policy: boot messages on fb0 during startup, then Klipper UI (no getty/login on panel)
 WiFi: RTL8189CS SDIO (Armbian kernel driver / rtw88)
 LEDs: GPIO green PA6, blue PA5
-Serial: ttyS3 @ 1500000 (Armbian — factory DTB with fiq-debugger disabled)
+Serial: ttyS3 @ 1500000 (Armbian  -  factory DTB with fiq-debugger disabled)
 EOF
 
 systemctl disable getty@tty1.service 2>/dev/null || true

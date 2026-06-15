@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# v16 stable kernel: TSADC only — NO built-in DRM (avoids __run_timers panic).
+# v16 stable kernel: TSADC only  -  NO built-in DRM (avoids __run_timers panic).
 set -euo pipefail
 REPO="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian"
 AB="$HOME/armbian-build"

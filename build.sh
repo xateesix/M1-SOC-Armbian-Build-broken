@@ -44,9 +44,9 @@ if [ ! -f "$BOARD_CONF_SRC" ]; then
     error "Board config not found: $BOARD_CONF_SRC"
 fi
 
-info "Installing board config → $BOARD_CONF_DST"
+info "Installing board config  ->  $BOARD_CONF_DST"
 cp "$BOARD_CONF_SRC" "$BOARD_CONF_DST"
-# Strip Windows CRLF line endings (\r\n → \n)
+# Strip Windows CRLF line endings (\r\n  ->  \n)
 sed -i 's/\r$//' "$BOARD_CONF_DST"
 
 # ── Step 2: install kernel DTS patch ──────────────────────────────────────
@@ -57,7 +57,7 @@ if [ ! -f "$PATCH_SRC" ]; then
     error "Kernel patch not found: $PATCH_SRC"
 fi
 
-info "Installing kernel patch → $PATCH_DST_DIR/"
+info "Installing kernel patch  ->  $PATCH_DST_DIR/"
 mkdir -p "$PATCH_DST_DIR"
 cp "$PATCH_SRC" "$PATCH_DST_DIR/"
 sed -i 's/\r$//' "$PATCH_DST_DIR/$(basename "$PATCH_SRC")"
@@ -87,38 +87,38 @@ echo ""
 # ── Step 5: DTS label verification reminder ───────────────────────────────
 cat <<'EOF'
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  BEFORE BUILDING — verify these DTS labels match your kernel version:   │
-│                                                                         │
-│  1. I2S for ACODEC:                                                     │
-│       grep -n "ff320000" $ARMBIAN_PATH/                                 │
-│           <cache>/sources/linux-rockchip64-current/                     │
-│           arch/arm64/boot/dts/rockchip/rk3308.dtsi                      │
-│     Change &i2s2 in the DTS if the label differs.                       │
-│                                                                         │
-│  2. RGB display bridge endpoint:                                        │
-│       grep -n "rgb_out\|rgb@" <same rk3308.dtsi path>                  │
-│     Adjust &rgb_out in the DTS if the endpoint label differs.           │
-│                                                                         │
-│  3. PWM labels (vdd_core = &pwm8, backlight = &pwm9):                  │
-│       grep -n "ff18000" <same rk3308.dtsi path>                         │
-│     Confirm pwm8 = ff180000, pwm9 = ff180010.                           │
-│                                                                         │
-│  4. Touch screen size:                                                  │
-│     The GT911 OEM firmware was configured for 800×480.                  │
-│     If touch coordinates are wrong, reflash GT911 config or override    │
-│     the touchscreen-size-x/y values in the DTS.                         │
-└─────────────────────────────────────────────────────────────────────────┘
+|  BEFORE BUILDING  -  verify these DTS labels match your kernel version:   |
+|                                                                         |
+|  1. I2S for ACODEC:                                                     |
+|       grep -n "ff320000" $ARMBIAN_PATH/                                 |
+|           <cache>/sources/linux-rockchip64-current/                     |
+|           arch/arm64/boot/dts/rockchip/rk3308.dtsi                      |
+|     Change &i2s2 in the DTS if the label differs.                       |
+|                                                                         |
+|  2. RGB display bridge endpoint:                                        |
+|       grep -n "rgb_out\|rgb@" <same rk3308.dtsi path>                  |
+|     Adjust &rgb_out in the DTS if the endpoint label differs.           |
+|                                                                         |
+|  3. PWM labels (vdd_core = &pwm8, backlight = &pwm9):                  |
+|       grep -n "ff18000" <same rk3308.dtsi path>                         |
+|     Confirm pwm8 = ff180000, pwm9 = ff180010.                           |
+|                                                                         |
+|  4. Touch screen size:                                                  |
+|     The GT911 OEM firmware was configured for 800x480.                  |
+|     If touch coordinates are wrong, reflash GT911 config or override    |
+|     the touchscreen-size-x/y values in the DTS.                         |
+--───────────────────────────────────────────────────────────────────────┘
 
 EOF
 
 # ── Step 6: run the Armbian build ─────────────────────────────────────────
 info "Starting Armbian build for rk3308bs-evb (branch: current, release: jammy)"
-info "First run downloads toolchains and takes 30–90 minutes."
+info "First run downloads toolchains and takes 30 - 90 minutes."
 echo ""
 
 cd "$ARMBIAN_PATH"
 
-# PREFER_DOCKER=no  → skip the Docker-unavailable countdown/prompt entirely
+# PREFER_DOCKER=no   ->  skip the Docker-unavailable countdown/prompt entirely
 #                     and go straight to sudo native build.
 # Pass any extra arguments from the command line (e.g. KERNEL_ONLY=yes)
 ./compile.sh \

@@ -1,5 +1,5 @@
 #!/bin/bash
-# RK3308BS eMMC uses a fixed Rockchip GPT from parameter.txt — do NOT grow rootfs.
+# RK3308BS eMMC uses a fixed Rockchip GPT from parameter.txt  -  do NOT grow rootfs.
 set -euo pipefail
 
 echo "[rk3308bs] Disabling Armbian rootfs resize (fixed eMMC GPT layout) ..."

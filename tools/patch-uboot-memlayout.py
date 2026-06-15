@@ -2,7 +2,7 @@
 """Patch factory uboot.img default env for Armbian 6.18 LZ4 kernels + fix LOADER hash.
 
 Factory layout puts fdt_addr_r at 0x01f00000 while the 6.18 kernel decompresses to
-~0x00280000 and grows past 0x02900000, overlapping the FDT → boot loop.
+~0x00280000 and grows past 0x02900000, overlapping the FDT  ->  boot loop.
 
 Same-length env replacements preserve the embedded env struct. After patching, both
 LOADER headers (0x0 and 0x100000) need hash_in_hdr updated to hash_by_crypto or the

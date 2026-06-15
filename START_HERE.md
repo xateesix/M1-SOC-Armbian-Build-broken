@@ -1,4 +1,4 @@
-# 📖 Armbian Build System — Complete Guide
+# 📖 Armbian Build System  -  Complete Guide
 
 ## 🎯 What You Get
 
@@ -16,8 +16,8 @@ A **complete, professional Armbian build system** for your RK3308BS EVB that:
 
 | File | Purpose |
 |------|---------|
-| **RESUME_HERE.md** ⭐ | **Session pickup** — where we left off, v45 pipeline, troubleshooting |
-| **QUICKSTART.md** ⭐ | **First build** — 3-step Armbian compile guide |
+| **RESUME_HERE.md** ⭐ | **Session pickup**  -  where we left off, v45 pipeline, troubleshooting |
+| **QUICKSTART.md** ⭐ | **First build**  -  3-step Armbian compile guide |
 | **config.env** | Configuration (WiFi, password, server) |
 | **build-enhanced.sh** | Main build script (automatic WiFi + password setup) |
 | **setup-validate.sh** | Pre-build checker (before first build) |
@@ -73,7 +73,7 @@ Use **balenaEtcher** or Linux `dd` command (see QUICKSTART.md)
 
 ## 🔧 What's Different From Old System?
 
-### Problem → Solution
+### Problem  ->  Solution
 
 | Problem | Old Way | New Way |
 |---------|---------|---------|
@@ -137,27 +137,27 @@ See **README.md** for more troubleshooting
 
 ```
 Windows Machine (You)          Ubuntu Server (Build)
-    │                               │
-    ├─ setup-validate.sh ──────────▶│ (Checks SSH, disk space)
-    │                               │
-    ├─ config.env ─────────────────▶│ (Read your settings)
-    │                               │
-    ├─ rk3308bs-evb.conf ──────────▶│
-    │  + DTS + patch               │ (Copy files)
-    │                               │
-    ├─ build-enhanced.sh ──────────▶│ (Start build)
-    │                               │
-    │                        [Armbian Build]
-    │                        ├─ Clone/update armbian-build/ (persistent)
-    │                        ├─ Apply your DTS patch
-    │                        ├─ Create WiFi overlay
-    │                        ├─ Create password script
-    │                        ├─ Compile kernel
-    │                        ├─ Package rootfs
-    │                        └─ Create image
-    │                               │
-    │◀──── Download Image ──────────┤
-    │
+    |                               |
+    ├─ setup-validate.sh ──────────▶| (Checks SSH, disk space)
+    |                               |
+    ├─ config.env ─────────────────▶| (Read your settings)
+    |                               |
+    ├─ rk3308bs-evb.conf ──────────▶|
+    |  + DTS + patch               | (Copy files)
+    |                               |
+    ├─ build-enhanced.sh ──────────▶| (Start build)
+    |                               |
+    |                        [Armbian Build]
+    |                        ├─ Clone/update armbian-build/ (persistent)
+    |                        ├─ Apply your DTS patch
+    |                        ├─ Create WiFi overlay
+    |                        ├─ Create password script
+    |                        ├─ Compile kernel
+    |                        ├─ Package rootfs
+    |                        └─ Create image
+    |                               |
+    |◀──── Download Image ──────────┤
+    |
   [Image]
   ├─ Kernel with custom DTS
   ├─ WiFi pre-configured
@@ -168,7 +168,7 @@ Windows Machine (You)          Ubuntu Server (Build)
 
 ## 📝 Files You Should Know
 
-### `config.env` — Your Settings (EDIT THIS)
+### `config.env`  -  Your Settings (EDIT THIS)
 ```bash
 BUILD_SERVER_HOST="ubuntu-server"    # Where Armbian builds
 BUILD_SERVER_USER="xateesix"
@@ -180,7 +180,7 @@ WIFI_PASSWORD="mNhTYTeh#..."
 ROOT_PASSWORD="YOUR_PASSWORD"           # Pre-set in image
 ```
 
-### `build-enhanced.sh` — Main Build Script (RUN THIS)
+### `build-enhanced.sh`  -  Main Build Script (RUN THIS)
 - Validates setup
 - Copies files to server via SSH
 - Creates WiFi overlay
@@ -188,13 +188,13 @@ ROOT_PASSWORD="YOUR_PASSWORD"           # Pre-set in image
 - Runs Armbian build
 - Downloads image
 
-### `setup-validate.sh` — Pre-Build Check (RUN THIS FIRST)
+### `setup-validate.sh`  -  Pre-Build Check (RUN THIS FIRST)
 - Checks all files exist
 - Verifies SSH works
 - Checks disk space
 - Tests server connectivity
 
-### `rk3308bs-evb-amic-v11.dts` — Hardware Definition
+### `rk3308bs-evb-amic-v11.dts`  -  Hardware Definition
 - GPIO mappings
 - LCD controller setup
 - Audio codec (I2S)
@@ -222,11 +222,11 @@ ROOT_PASSWORD="YOUR_PASSWORD"           # Pre-set in image
 | Question | See |
 |----------|-----|
 | How do I build? | **QUICKSTART.md** |
-| What is each file? | **README.md** → File Structure |
+| What is each file? | **README.md**  ->  File Structure |
 | Why did you change things? | **IMPROVEMENTS.md** |
 | How do I set up GitHub? | **GITHUB_SETUP.md** |
-| Build failed, what now? | **README.md** → Troubleshooting |
-| I want to modify DTS | **README.md** → Advanced Usage |
+| Build failed, what now? | **README.md**  ->  Troubleshooting |
+| I want to modify DTS | **README.md**  ->  Advanced Usage |
 
 ---
 
@@ -251,4 +251,4 @@ ROOT_PASSWORD="YOUR_PASSWORD"           # Pre-set in image
 
 ---
 
-**Ready to build? → Start with QUICKSTART.md** 🚀
+**Ready to build?  ->  Start with QUICKSTART.md** 🚀

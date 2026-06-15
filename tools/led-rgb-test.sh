@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Artillery M1 Pro SOC (RK3308BS) — onboard GPIO LEDs + 3-pin RGB header test.
+# Artillery M1 Pro SOC (RK3308BS)  -  onboard GPIO LEDs + 3-pin RGB header test.
 set -euo pipefail
 
 GREEN_LED=/sys/class/leds/rockpis:green:power
@@ -29,7 +29,7 @@ cleanup() {
 trap cleanup EXIT
 
 if [ ! -d "$GREEN_LED" ]; then
-  echo "ERROR: $GREEN_LED not found — gpio-leds missing from DTB"
+  echo "ERROR: $GREEN_LED not found  -  gpio-leds missing from DTB"
   exit 1
 fi
 
@@ -51,7 +51,7 @@ for step in "1 0 green on" "0 1 blue on" "1 1 both on" "0 0 both off"; do
 done
 
 say "PART 2: 3-pin RGB header via GPIO (R=$RGB_R G=$RGB_G B=$RGB_B)"
-say "PWM4/5/6 are disabled in DT — testing digital on/off only"
+say "PWM4/5/6 are disabled in DT  -  testing digital on/off only"
 rgb_off
 
 for color in "1 0 0 RED" "0 1 0 GREEN" "0 0 1 BLUE" "1 1 1 WHITE" "0 0 0 OFF"; do
@@ -71,4 +71,4 @@ for line in "$RGB_R:red" "$RGB_G:green" "$RGB_B:blue"; do
 done
 rgb_off
 
-say "DONE — restored default LED triggers (green=on, blue=heartbeat)"
+say "DONE  -  restored default LED triggers (green=on, blue=heartbeat)"

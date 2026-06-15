@@ -10,7 +10,7 @@ export TMPDIR
 mkdir -p "$TMPDIR" "$BUILD_DIR"
 export RK3308BS_IMAGE_TAG="v45-systemcfg-chroot"
 
-[[ -f "$REL/_Image-v22" ]] || { echo "Missing kernel Image — run build-release-v43.sh first"; exit 1; }
+[[ -f "$REL/_Image-v22" ]] || { echo "Missing kernel Image  -  run build-release-v43.sh first"; exit 1; }
 
 bash "$TOOLS/patch-rootfs-v45-mount.sh" "$REL/rootfs-v11.img" "$BUILD_DIR/rootfs-patched.img"
 bash "$TOOLS/install-kernel-modules-debugfs-all.sh" "$BUILD_DIR/rootfs-patched.img" "$BUILD_DIR/rootfs-v45.img"

@@ -8,7 +8,7 @@ REL="$REPO/releases/1.0.0"
 TOOLS="$REPO/tools"
 
 if [ ! -d "$AB" ]; then
-  echo "Missing ~/armbian-build — clone https://github.com/armbian/build first"
+  echo "Missing ~/armbian-build  -  clone https://github.com/armbian/build first"
   exit 1
 fi
 
@@ -30,7 +30,7 @@ if command -v docker >/dev/null 2>&1 || sudo -n true 2>/dev/null; then
     IMG=$(find "$AB/.cache" -name Image -path '*/image_*/*' 2>/dev/null | head -1)
   fi
 else
-  echo "=== Docker/sudo unavailable — standalone cross-compile ==="
+  echo "=== Docker/sudo unavailable  -  standalone cross-compile ==="
   bash "$TOOLS/build-kernel-v13-standalone.sh"
   exit 0
 fi

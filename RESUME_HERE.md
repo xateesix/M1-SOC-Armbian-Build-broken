@@ -1,4 +1,4 @@
-# Resume Here — RK3308BS Armbian (M1 Pro S1-SOC)
+# Resume Here  -  RK3308BS Armbian (M1 Pro S1-SOC)
 
 **Read this first** after a break, a failed build, or a new Cursor session.
 
@@ -6,11 +6,11 @@
 
 Build a **distributable, reproducible, lean Armbian OS** for the Artillery M1 Pro S1-SOC (RK3308BS) that:
 
-- **Fully supports onboard hardware** — LCD, touch, WiFi, serial, thermal, eMMC (everything needed on the printer)
-- **Targets Klipper** — minimal rootfs, reliable boot, display + network for a printer host (not a general desktop)
-- **Pre-configured before compile** — edit `config.env` once for username, password, WiFi, locale, timezone; baked into the image at build time (no first-boot wizard)
-- **Reproducible** — scripted pipeline from Armbian source → patched rootfs → monolithic eMMC image; same inputs produce the same output
-- **Published publicly on GitHub** — `https://github.com/xateesix/M1-SOC-Armbian-Build.git` for others to fork, customize `config.env`, and build their own image
+- **Fully supports onboard hardware**  -  LCD, touch, WiFi, serial, thermal, eMMC (everything needed on the printer)
+- **Targets Klipper**  -  minimal rootfs, reliable boot, display + network for a printer host (not a general desktop)
+- **Pre-configured before compile**  -  edit `config.env` once for username, password, WiFi, locale, timezone; baked into the image at build time (no first-boot wizard)
+- **Reproducible**  -  scripted pipeline from Armbian source  ->  patched rootfs  ->  monolithic eMMC image; same inputs produce the same output
+- **Published publicly on GitHub**  -  `https://github.com/xateesix/M1-SOC-Armbian-Build.git` for others to fork, customize `config.env`, and build their own image
 
 **Design principles:** lean (no bloat), hardware-complete, script-driven, config-driven, documented flash path. Current work (v46 pipeline) is a stepping stone toward that release-quality image.
 
@@ -20,15 +20,15 @@ Build a **distributable, reproducible, lean Armbian OS** for the Artillery M1 Pr
 |-----------|--------|-------|
 | eMMC boot/flash | Working | RKDevTool monolithic `.img`, 17 MB boot slot |
 | Serial console | Working | UART3 @ 1500000, **ttyFIQ0** |
-| 480×272 LCD | In progress | panel-dpi DTB + DRM modules in v46 |
-| Goodix GT911 touch | Target | I2C3 — verify after v46 flash |
+| 480x272 LCD | In progress | panel-dpi DTB + DRM modules in v46 |
+| Goodix GT911 touch | Target | I2C3  -  verify after v46 flash |
 | RTL8189FS WiFi | In progress | Module baked; credentials from `config.env` |
 | RK3308BS thermal | Working | `rk3308bs-tsadc` kernel patch + DTB |
 | Klipper host ready | Target | Lean Bookworm, SSH/serial login, WiFi, display |
 
 ### User customization (before compile)
 
-Edit **`config.env`** — single file, no image editing:
+Edit **`config.env`**  -  single file, no image editing:
 
 | Setting | Variable |
 |---------|----------|
@@ -53,9 +53,9 @@ For public GitHub: ship `config.env.example` with placeholders; keep real `confi
 ## Hardware
 
 - Board: Artillery M1 Pro S1-SOC (RK3308BS)
-- Flash tool: RKDevTool v2.86 → tab **Upgrade Firmware** (monolithic `.img` only)
-- Serial: **UART3 @ 1500000**, console **`ttyFIQ0`** (fiq-debugger — same header as factory)
-- LCD: 480×272 RGB panel-dpi
+- Flash tool: RKDevTool v2.86  ->  tab **Upgrade Firmware** (monolithic `.img` only)
+- Serial: **UART3 @ 1500000**, console **`ttyFIQ0`** (fiq-debugger  -  same header as factory)
+- LCD: 480x272 RGB panel-dpi
 - WiFi: RTL8189FS (`8189fs.ko`)
 
 ## Current firmware line
@@ -63,12 +63,12 @@ For public GitHub: ship `config.env.example` with placeholders; keep real `confi
 | Item | Value |
 |------|-------|
 | **Target version** | **v46** (`v46-systemcfg-chroot`) |
-| **Why v46** | v43 rootfs used `debugfs set_inode_field` → ext4 inode corruption → login loop |
-| **v44** | Never built — redirects to v46 |
+| **Why v46** | v43 rootfs used `debugfs set_inode_field`  ->  ext4 inode corruption  ->  login loop |
+| **v44** | Never built  -  redirects to v46 |
 | **Flash image** | `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v46.img` |
 | **Alias** | `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed.img` (copy of latest) |
 
-**Do not flash v43** — known `Authentication failure` / `bogus i_mode (644)`.
+**Do not flash v43**  -  known `Authentication failure` / `bogus i_mode (644)`.
 
 ## Where we left off (2026-06-13)
 
@@ -90,7 +90,7 @@ bash tools/finish-pack-v46.sh
 
 ### Flash (Windows)
 
-1. MASKROM → RKDevTool → **Upgrade Firmware**
+1. MASKROM  ->  RKDevTool  ->  **Upgrade Firmware**
 2. Select `releases\1.0.0\rk3308bs-1.0.0-emmc-fixed-v46.img`
 3. Log must show `Gpt=1`, `Download rootfs`, `Download Firmware Success`
 
@@ -112,19 +112,19 @@ GPT uses factory `rootfs:grow` at `0x17200` (v45 explicit size caused unnamed pa
 
 ```
 rootfs-v11.img
-  → patch-rootfs-v46-mount.sh   (chroot: users, system.cfg, ttyFIQ0 getty)
-  → install-kernel-modules-debugfs-all.sh  (WiFi + DRM modules)
-  → rootfs-v46.img
+   ->  patch-rootfs-v46-mount.sh   (chroot: users, system.cfg, ttyFIQ0 getty)
+   ->  install-kernel-modules-debugfs-all.sh  (WiFi + DRM modules)
+   ->  rootfs-v46.img
 build-boot-v39.sh               (factory DTB + panel-dpi + ttyFIQ0 bootargs)
-  → _boot-v39.img
+   ->  _boot-v39.img
 stage-pack-v39.sh               (pack_input_v39/)
 windows-pack-update.ps1         (AFPTool + RKImageMaker)
-  → rk3308bs-1.0.0-emmc-fixed-v46.img
+   ->  rk3308bs-1.0.0-emmc-fixed-v46.img
 ```
 
 ## Config (single source of truth)
 
-Edit **`config.env`** before every build — this is how end users customize the distributable image:
+Edit **`config.env`** before every build  -  this is how end users customize the distributable image:
 
 | Setting | Variable |
 |---------|----------|
@@ -152,7 +152,7 @@ Values are baked in at compile/patch time. For public GitHub: use `config.env.ex
 
 | File | When to read |
 |------|--------------|
-| **RESUME_HERE.md** | This file — session pickup |
+| **RESUME_HERE.md** | This file  -  session pickup |
 | **`.cursor/STATE.md`** | Machine-readable snapshot (update after builds) |
 | **FLASH_RKDEVTOOL.md** | Flash failures, log patterns, version history |
 | **EMMC_RELEASE.md** | Full Phase A/B pipeline |

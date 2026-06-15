@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bake credentials/locale/autologin via loop mount + chroot (safe — no debugfs set_inode_field).
+# Bake credentials/locale/autologin via loop mount + chroot (safe  -  no debugfs set_inode_field).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -69,9 +69,9 @@ sudo chroot "$MNT" env \
 	/bin/bash /tmp/rk3308bs-preconfigure.sh
 sudo rm -f "$MNT/tmp/rk3308bs-preconfigure.sh"
 
-# US keyboard — no console-setup wizard
+# US keyboard  -  no console-setup wizard
 sudo tee "$MNT/etc/default/keyboard" >/dev/null <<'EOF'
-# US English keyboard (baked at image build — no console-setup wizard)
+# US English keyboard (baked at image build  -  no console-setup wizard)
 XKBMODEL="pc105"
 XKBLAYOUT="us"
 XKBVARIANT=""
@@ -144,7 +144,7 @@ cp "$IMG" "$OUT"
 trap - EXIT
 rm -rf "$WORKDIR"
 
-echo "Wrote $OUT (${IMAGE_TAG}: ${USER_NAME} autologin, chroot credentials — no debugfs inode edits)"
+echo "Wrote $OUT (${IMAGE_TAG}: ${USER_NAME} autologin, chroot credentials  -  no debugfs inode edits)"
 bash "$SCRIPT_DIR/tools/verify-rootfs-password.sh" "$OUT" "$ROOT_PASSWORD" || true
 
 echo "=== verify passwd/shadow/home inode modes ==="

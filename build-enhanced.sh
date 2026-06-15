@@ -179,7 +179,7 @@ _build_remote() {
         warn "Cannot connect to $BUILD_SERVER_USER@$BUILD_SERVER_HOST"
         return 1
     fi
-    info "✓ SSH connection OK"
+    info "[OK] SSH connection OK"
 
     info "Ensuring build directory: $SSH_PATH"
     ssh_remote mkdir -p "$SSH_PATH"
@@ -206,7 +206,7 @@ else
     git reset --hard origin/main
 fi
 
-echo "✓ Armbian repo ready"
+echo "[OK] Armbian repo ready"
 EOF_INIT_REPO
 
     # Copy artifacts
@@ -308,7 +308,7 @@ if [ -f "\$BUILD_PATH/_customize-image.sh" ]; then
     chmod +x "\$BUILD_PATH/userpatches/customize-image.sh"
 fi
 
-# Non-interactive build (config-default.conf must resolve — symlink to our config)
+# Non-interactive build (config-default.conf must resolve  -  symlink to our config)
 rm -f "\$BUILD_PATH/userpatches/config-example.conf"
 cat > "\$BUILD_PATH/userpatches/config.conf" <<CFG
 BOARD=rk3308bs-evb
@@ -323,7 +323,7 @@ NO_HOST_RELEASE_CHECK=yes
 CFG
 ln -sf config.conf "\$BUILD_PATH/userpatches/config-default.conf"
 
-echo "✓ Configuration ready"
+echo "[OK] Configuration ready"
 EOF_SETUP
 
     step "PHASE 2: Building Armbian (this takes 20-40 minutes)"
@@ -343,7 +343,7 @@ EOF_SETUP
     fi
 
     if [ "$BUILD_OK" != "1" ]; then
-        error "Armbian compile failed — see build-remote.log"
+        error "Armbian compile failed  -  see build-remote.log"
     fi
 
     step "PHASE 3: Retrieving image from server"
@@ -448,7 +448,7 @@ case "$BUILD_TYPE" in
     remote)
         step "REMOTE BUILD: $BUILD_SERVER_HOST"
         if ! _build_remote; then
-            warn "Remote build failed — falling back to local WSL build"
+            warn "Remote build failed  -  falling back to local WSL build"
             step "LOCAL BUILD (fallback)"
             _build_local
         fi

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rootfs: WiFi + grow rootfs + networkd/wpa (no Armbian firstrun — credentials from v17 patch).
+# Rootfs: WiFi + grow rootfs + networkd/wpa (no Armbian firstrun  -  credentials from v17 patch).
 # NEVER use debugfs set_inode_field (corrupts ext4 inodes).
 set -euo pipefail
 

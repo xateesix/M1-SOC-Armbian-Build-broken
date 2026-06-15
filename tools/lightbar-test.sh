@@ -3,7 +3,7 @@
 set -euo pipefail
 LED=/sys/class/leds/lightbar:white
 if [[ ! -d "$LED" ]]; then
-  echo "ERROR: $LED not found — flash v62 boot DTB and: modprobe leds-pwm"
+  echo "ERROR: $LED not found  -  flash v62 boot DTB and: modprobe leds-pwm"
   exit 1
 fi
 modprobe leds-pwm 2>/dev/null || true

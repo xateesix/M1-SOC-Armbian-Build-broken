@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rockchip eMMC GPT uses rootfs:grow — use stock armbian-resize-filesystem, not growroot initramfs.
+# Rockchip eMMC GPT uses rootfs:grow  -  use stock armbian-resize-filesystem, not growroot initramfs.
 set -euo pipefail
 
 echo "[rk3308bs] Enabling Armbian rootfs resize (Rockchip GPT rootfs:grow) ..."

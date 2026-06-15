@@ -47,18 +47,18 @@ sudo -v
 ```
 
 Creates:
-- `releases/1.0.0/boot.img` — Armbian kernel + your DTB
-- `releases/1.0.0/rootfs.img` — your Armbian rootfs
-- `releases/1.0.0/rk3308bs-1.0.0-emmc.img` — flash in RKDevTool
+- `releases/1.0.0/boot.img`  -  Armbian kernel + your DTB
+- `releases/1.0.0/rootfs.img`  -  your Armbian rootfs
+- `releases/1.0.0/rk3308bs-1.0.0-emmc.img`  -  flash in RKDevTool
 
 Options:
-- `--factory-kernel` — Phase A (factory boot.img + 8189fs module extract)
-- `--no-shrink` — skip `resize2fs -M`
-- `--pack-only` — WSL staging only; run `windows-pack-update.ps1` on Windows
+- `--factory-kernel`  -  Phase A (factory boot.img + 8189fs module extract)
+- `--no-shrink`  -  skip `resize2fs -M`
+- `--pack-only`  -  WSL staging only; run `windows-pack-update.ps1` on Windows
 
 ### 3. Flash
 
-RKDevTool → **Upgrade Firmware** → `rk3308bs-1.0.0-emmc.img`
+RKDevTool  ->  **Upgrade Firmware**  ->  `rk3308bs-1.0.0-emmc.img`
 
 Serial: **UART3 @ 1500000**, console **`ttyFIQ0`**.
 

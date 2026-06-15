@@ -44,7 +44,7 @@ source "$CONFIG_FILE" || {
 }
 
 # Check required variables
-for var in WIFI_SSID WIFI_PASSWORD ROOT_PASSWORD BUILD_SERVER_HOST BUILD_SERVER_USER BUILD_SERVER_PATH; do
+for var in ROOT_PASSWORD; do
     if [ -z "${!var:-}" ]; then
         fail "Missing $var in config.env"
         exit 1

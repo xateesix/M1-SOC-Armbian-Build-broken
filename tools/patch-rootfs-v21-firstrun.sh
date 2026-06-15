@@ -38,7 +38,7 @@ cp "$SRC" "$DST"
 
 # https://docs.armbian.com/User-Guide_Autoconfig/
 cat >"$FIRSTBOOT" <<EOF
-# RK3308BS — Armbian official non-interactive first boot
+# RK3308BS  -  Armbian official non-interactive first boot
 PRESET_ROOT_PASSWORD="$ROOT_PASSWORD"
 PRESET_USER_NAME="$USER_NAME"
 PRESET_USER_PASSWORD="$USER_PASSWORD"

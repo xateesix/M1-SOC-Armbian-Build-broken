@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run on the board after inserting an SD card (optional — documents MMC topology).
+# Run on the board after inserting an SD card (optional  -  documents MMC topology).
 set -euo pipefail
 
 echo "=== lsblk ==="
