@@ -72,6 +72,10 @@ for bl in /sys/class/backlight/*/brightness; do
 	[[ -f "$bl" ]] && echo 255 >"$bl"
 done
 
+for bp in /sys/class/backlight/*/bl_power; do
+	[[ -f "$bp" ]] && echo 0 >"$bp"
+done
+
 log "drm=$(ls -1 /sys/class/drm/ 2>/dev/null | tr '\n' ' ')"
 log "fb=$(ls -1 /sys/class/graphics/ 2>/dev/null | tr '\n' ' ')"
 log "panel-drv=$(ls -1 /sys/bus/platform/drivers/panel-simple/ 2>/dev/null | tr '\n' ' ')"

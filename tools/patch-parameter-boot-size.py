@@ -62,7 +62,7 @@ def patch_parameter(
         rootfs_part = f"0x{rootfs_size:08x}@{new_root_hex}(rootfs)"
         rootfs_note = (
             f"# rootfs: explicit {rootfs_size * SECTOR // (1024 * 1024)} MiB at {new_root_hex} "
-            f"(helps RKDevTool v3.32 flash rootfs)"
+            f"(explicit size — RKDevTool flashes rootfs; do not use :grow suffix)"
         )
     else:
         rootfs_part = f"-@{new_root_hex}(rootfs:grow)"

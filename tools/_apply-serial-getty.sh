@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 # Apply serial console getty inside a mounted rootfs (called from patch-rootfs-*-mount.sh).
-# Armbian 6.18: ttyS3 @ 1500000 on UART3 (0xff0d0000) — same header as factory ttyFIQ0.
+# RK3308BS: UART3 header @ 1500000 — console device is ttyFIQ0 (factory fiq-debugger).
 set -euo pipefail
 
 MNT="${1:?mount point}"
 USER_NAME="${2:?username}"
-SERIAL_GETTY="${3:-ttyS3}"
+SERIAL_GETTY="${3:-ttyFIQ0}"
 SERIAL_BAUD="${4:-1500000}"
 
-# Disable factory fiq-debugger getty (no fiq driver in 6.18).
-sudo chroot "$MNT" systemctl disable serial-getty@ttyFIQ0.service 2>/dev/null || true
-sudo rm -f "$MNT/etc/systemd/system/getty.target.wants/serial-getty@ttyFIQ0.service"
+# Disable the alternate serial getty so only one console is active.
+for alt in ttyFIQ0 ttyS3; do
+	if [[ "$alt" != "$SERIAL_GETTY" ]]; then
+		sudo chroot "$MNT" systemctl disable "serial-getty@${alt}.service" 2>/dev/null || true
+		sudo rm -f "$MNT/etc/systemd/system/getty.target.wants/serial-getty@${alt}.service"
+		sudo rm -rf "$MNT/etc/systemd/system/serial-getty@${alt}.service.d"
+	fi
+done
 
 sudo mkdir -p "$MNT/etc/systemd/system/serial-getty@${SERIAL_GETTY}.service.d"
 sudo tee "$MNT/etc/systemd/system/serial-getty@${SERIAL_GETTY}.service.d/autologin.conf" >/dev/null <<EOF
@@ -26,7 +31,6 @@ sudo rm -f \
 	"$MNT/etc/systemd/system/serial-getty@.service.d/autologin.conf" \
 	"$MNT/etc/systemd/system/serial-getty@${SERIAL_GETTY}.service.d/baud1500000.conf"
 
-# Allow root/user login on serial (Armbian may only list ttyFIQ0).
 if [[ -f "$MNT/etc/securetty" ]] && ! grep -qx "$SERIAL_GETTY" "$MNT/etc/securetty"; then
 	echo "$SERIAL_GETTY" | sudo tee -a "$MNT/etc/securetty" >/dev/null
 fi

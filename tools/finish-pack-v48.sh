@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REL="$SCRIPT_DIR/releases/1.0.0"
+TOOLS="$SCRIPT_DIR/tools"
+ROOTFS="${1:-$REL/rootfs-v45.img}"
+[[ -f "$ROOTFS" ]] || { echo "Missing rootfs"; exit 1; }
+[[ -f "$REL/_boot-v39.img" ]] || bash "$TOOLS/build-boot-v39.sh" "$REL/_Image-v22"
+bash "$TOOLS/stage-pack-v39.sh" "$ROOTFS"
+bash "$TOOLS/verify-pack-parameter.sh" "$REL/pack_input_v39/Image/parameter.txt"
+WIN_PACK="$(wslpath -w "$REL/pack_input_v39")"
+OUT_IMG="$(wslpath -w "$REL/rk3308bs-1.0.0-emmc-fixed-v48.img")"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/windows-pack-update.ps1")" -PackInput "$WIN_PACK" -Output "rk3308bs-1.0.0-emmc-fixed-v48.img"
+cp -f "$REL/rk3308bs-1.0.0-emmc-fixed-v48.img" "$REL/rk3308bs-1.0.0-emmc-fixed.img"
+ls -la "$REL/rk3308bs-1.0.0-emmc-fixed-v48.img"
+echo ""
+echo "=== FLASH IN RKDevTool ==="
+echo "1. Tab: Upgrade Firmware (NOT Download Image)"
+echo "2. Select: $REL/rk3308bs-1.0.0-emmc-fixed-v48.img"
+echo "3. Log MUST show: total=1677655552 and rootfs ~47s"
+echo "4. Do NOT use Advanced / config.cfg (points to old path)"

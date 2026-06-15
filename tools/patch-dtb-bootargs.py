@@ -92,7 +92,7 @@ def patch_rk3308_panel_dpi(dtb: Path) -> None:
         "\t\t\tvsync-len = <0x04>;\n"
         "\t\t\thsync-active = <0x01>;\n"
         "\t\t\tvsync-active = <0x01>;\n"
-        "\t\t\tde-active = <0x01>;\n"
+        "\t\t\tde-active = <0x00>;\n"
         "\t\t\tpixelclk-active = <0x01>;\n"
         "\t\t};\n"
     )
@@ -166,7 +166,7 @@ def main() -> int:
     ap.add_argument(
         "--armbian-serial",
         action="store_true",
-        help="Factory DTB for OTP/thermal but disable fiq-debugger and use ttyS3 @ 1500000",
+        help="Legacy: disable fiq-debugger and use ttyS3 (do not use on RK3308BS — console is ttyFIQ0)",
     )
     ap.add_argument(
         "--disable-thermal-critical",

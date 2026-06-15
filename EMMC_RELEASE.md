@@ -35,7 +35,7 @@ Install in WSL: `lz4`, `python3`, `device-tree-compiler`, `e2fsprogs`.
 Produces `../Armbian-unofficial_*_Rk3308bs-evb_bookworm_*.img`.
 
 **Important:** After DTS changes, rebuild Armbian so the image contains an
-updated `rk3308bs-evb-amic-v11.dtb` (console `ttyS3`, no fiq-debugger).
+updated `rk3308bs-evb-amic-v11.dtb` (console `ttyFIQ0` via fiq-debugger).
 
 ### 2. Pack monolithic eMMC update (Phase B default)
 
@@ -60,7 +60,7 @@ Options:
 
 RKDevTool → **Upgrade Firmware** → `rk3308bs-1.0.0-emmc.img`
 
-Serial: **UART3 @ 1500000**, console **`ttyS3`**.
+Serial: **UART3 @ 1500000**, console **`ttyFIQ0`**.
 
 ### 4. Verify
 

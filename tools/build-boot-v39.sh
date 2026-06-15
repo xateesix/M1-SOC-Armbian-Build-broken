@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # v39 boot.img: v16 DT patches + panel-dpi timing for 480x272 RGB panel.
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh"
-TOOLS="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/tools"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REL="$SCRIPT_DIR/releases/1.0.0"
+FAC="$SCRIPT_DIR/factory_fresh"
+TOOLS="$SCRIPT_DIR/tools"
 
 KERNEL="${1:-$REL/_Image-v22}"
 [[ -f "$KERNEL" ]] || { echo "Missing $KERNEL"; exit 1; }
@@ -11,7 +12,7 @@ KERNEL="${1:-$REL/_Image-v22}"
 python3 "$TOOLS/patch-dtb-bootargs.py" \
   --from-factory-resource "$FAC/04_boot_unpacked/resource.img" \
   --output "$REL/_fac-dtb-v39.dtb" \
-  --armbian-serial \
+  --console ttyFIQ0 \
   --rk3308bs-tsadc \
   --rk3308-vop-resets \
   --rk3308-panel-dpi
@@ -31,6 +32,6 @@ python3 "$TOOLS/pack-rockchip-bootimg.py" \
   --kernel "$REL/_kernel-v39.lz4" \
   --resource "$REL/_resource-v39.img" \
   --output "$REL/_boot-v39.img" \
-  --cmdline "earlycon=uart8250,mmio32,0xff0d0000 console=ttyS3,1500000n8 loglevel=7 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait"
+  --cmdline "earlycon=uart8250,mmio32,0xff0d0000 console=ttyFIQ0 loglevel=7 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait"
 
 ls -la "$REL/_boot-v39.img" "$REL/_fac-dtb-v39.dtb"

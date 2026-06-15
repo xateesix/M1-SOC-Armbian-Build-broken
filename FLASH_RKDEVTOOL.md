@@ -141,7 +141,7 @@ Flash finishes in under ~30 seconds on a multi-GB image → only loader/IDB writ
 
 ## Serial
 
-After successful Armbian flash: **UART3 @ 1500000**, console **ttyS3**.
+After successful Armbian flash: **UART3 @ 1500000**, console **`ttyFIQ0`** (factory fiq-debugger — not ttyS3).
 
 Verify:
 
@@ -340,3 +340,73 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 | No v44 firmware | v44 script existed but **never built** — use `tools/build-release-v45-rootfs-only.sh` |
 | Partial flash (`total=33613312`) | Boot written but rootfs skipped; GPT may not match |
 | 9 MiB boot slot + 17 MiB boot.img | U-Boot reads truncated image → same PXE symptom |
+
+## Erase vs partition table (important)
+
+**RKDevTool "Erase Flash" does NOT remove the GPT.** It wipes partition *data* (zeros flash blocks). The partition table layout often persists or is immediately **rebuilt** on the next flash.
+
+| Action | GPT effect | Data effect |
+|--------|------------|-------------|
+| **Erase Flash** (Advanced) | GPT usually **unchanged** | Partition contents zeroed |
+| **Upgrade Firmware** + monolithic `.img` | **`Gpt=1` rebuilds GPT** from `parameter.txt` inside the image | Writes trust, uboot, boot, rootfs, etc. |
+| **Factory full image** flash | Full GPT + all partitions | Clean baseline |
+
+**Only Upgrade Firmware** (main tab) with a complete `rk3308bs-*.img` rebuilds GPT correctly *and* writes partition data. Erase alone is never enough.
+
+### What your 12:30 flash did (Putty + RKDevTool log)
+
+```
+total=30342656          boot-only (~1 sec) — wrong image (v46 grow-only)
+Gpt=1                   GPT rebuilt → rootfs *name* appeared (grow size 0xe78ddf)
+(no rootfs line)        rootfs *data* never written → empty/corrupt rootfs
+```
+
+Putty then shows `LoadTrustBL error:-3` / `No find trust.img!` — trust area invalid after erase + incomplete flash.
+
+### Correct recovery sequence
+
+1. **Do not rely on Erase** to fix GPT — it will not clear the table.
+2. MASKROM → **Upgrade Firmware** (main tab, NOT Advanced write-by-address).
+3. Select **`rk3308bs-1.0.0-emmc-fixed-v47.img`** (~1.68 GB).
+4. **Before clicking Run**, confirm image file size ~1.6 GB on disk.
+5. Log **must** show:
+   ```
+   total=1677655552
+   Start to download rootfs,offset=0x17200,size=1647312896
+   ```
+   (~47–48 seconds for rootfs). If `total=30342656`, STOP — wrong image or wrong mode.
+6. After success, GPT should show part 6 **rootfs** @ `0x17200` (size may display as grow `0xe78ddf` — OK if rootfs data was written).
+
+### Putty logs
+
+Save session logs to `C:\Workspaces\Putty-log\` for boot/flash verification.
+
+## Boot hang at "clk: Disabling unused clocks"
+
+**Symptom:** Serial stops after `clk: Disabling unused clocks`. No login, no panic.
+
+**Cause:** eMMC (`mmc0`) never creates `mmcblk0`. Kernel blocks on `rootwait` for `PARTUUID=614e0000-...`.
+
+Compare to factory dmesg (works):
+```
+mmc0 HS200 -> Waiting for root -> Successfully tuned phase -> mmcblk0 -> EXT4 mount
+```
+
+v48 PuTTY log (hangs):
+```
+mmc2: SD card detected (mmcblk2)   <- SD slot occupied
+mmc0 HS200
+(no "Successfully tuned phase")
+(no mmcblk0)
+clk: Disabling unused clocks
+```
+
+**Fix:** Remove the microSD card from the printer before boot. Factory images were tested with an empty SD slot. SD probe on `mmc@ff480000` (mmc2) can prevent eMMC tuning from completing.
+
+**Verify after removing SD:**
+- `dwmmc_rockchip ff490000.mmc: Successfully tuned phase to ...`
+- `mmcblk0: mmc0:0001 ...`
+- `EXT4-fs (mmcblk0p6): mounted filesystem`
+- autologin on ttyFIQ0
+
+SD slot can be used after boot for extra storage; avoid booting with a card inserted until we add a DT defer fix.

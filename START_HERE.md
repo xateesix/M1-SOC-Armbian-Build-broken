@@ -16,7 +16,8 @@ A **complete, professional Armbian build system** for your RK3308BS EVB that:
 
 | File | Purpose |
 |------|---------|
-| **QUICKSTART.md** ⭐ | **START HERE** — 3-step build guide |
+| **RESUME_HERE.md** ⭐ | **Session pickup** — where we left off, v45 pipeline, troubleshooting |
+| **QUICKSTART.md** ⭐ | **First build** — 3-step Armbian compile guide |
 | **config.env** | Configuration (WiFi, password, server) |
 | **build-enhanced.sh** | Main build script (automatic WiFi + password setup) |
 | **setup-validate.sh** | Pre-build checker (before first build) |

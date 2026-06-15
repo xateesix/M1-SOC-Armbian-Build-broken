@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh/03_partitions"
+REL="$SCRIPT_DIR/releases/1.0.0"
+FAC="$SCRIPT_DIR/factory_fresh/03_partitions"
 PACK="$REL/pack_input_v39"
 IMG="$PACK/Image"
 ROOTFS="${1:-$REL/rootfs-v39.img}"
@@ -20,5 +20,5 @@ cp "$ROOTFS" "$IMG/rootfs.img"
 python3 "$SCRIPT_DIR/tools/patch-parameter-boot-size.py" \
 	"$FAC/parameter.txt" "$IMG/boot.img" "$IMG/parameter.txt" \
 	--rootfs "$IMG/rootfs.img"
-echo "Staged $PACK (rootfs=$(basename "$ROOTFS"), explicit rootfs @0x17200 for RKDevTool)"
+echo "Staged $PACK (rootfs=$(basename "$ROOTFS"), explicit (rootfs) @0x17200)"
 grep -E 'CMDLINE|rootfs' "$IMG/parameter.txt" | head -3
