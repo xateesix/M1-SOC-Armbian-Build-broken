@@ -1,153 +1,229 @@
 # A3D M1 Pro X1  -  Armbian eMMC Firmware (RK3308BS)
 
-**Version v0.64.1**  -  experimental community firmware for the Artillery M1 Pro S1-SOC control board.
+**v0.64.1**  -  experimental firmware for the Artillery M1 Pro S1-SOC control board.
+
+## Project intent
+
+Turn an **otherwise barely usable or unusable** Artillery M1 Pro X1 into a **current mainline Klipper** printer by splitting roles across **new motion hardware** and the **factory S1-SOC board**.
+
+| Role | Hardware | Target software |
+|------|----------|-----------------|
+| **Printer / motion (heavy lifting)** | New **host + CNC toolhead** (e.g. [BTT Manta M4P](https://www.biqu.equipment/products/bigtreetech-manta-m4p) + [FYSETC H36](https://www.fysetc.com/products/fysetc-h36-mainboard)) | Mainline **Klipper** on the MCU stack  -  motion, heaters, fans, probe |
+| **Display + camera node** | Factory **RK3308 S1-SOC** (this firmware) | **KlipperScreen** on the stock LCD, **Crowsnest** for webcam streaming |
+
+The S1-SOC is **not** the printer MCU. It is an **external companion**  -  UI and camera  -  while the new host + toolhead boards run Klipper for the machine.
+
+This is **work in progress** (Z-stop/probe on the motion stack, KlipperScreen/Crowsnest integration on the S1-SOC).
 
 > ## WARNING  -  READ FIRST
 >
 > - **Experimental**  -  not supported by Artillery 3D; no warranty.
 > - **Void warranty**  -  flashing and hardware mods void manufacturer warranty.
-> - **Dangerous voltages**  -  printer has **mains AC** and **24 V DC**. Wrong wiring can cause fire, shock, or damage. Work unplugged unless qualified.
-> - **Extra hardware required**  -  USB-serial adapter, RKDevTool + Windows PC, possible eMMC flash setup, etc.
+> - **Dangerous voltages**  -  mains AC and 24 V DC. Fire and shock risk.
+> - **Extra hardware**  -  USB-C **data** cable, USB-TTL serial adapter (FT232RL), Windows PC with RKDevTool, MASKROM recovery access, plus the **host + toolhead upgrade** for printer control.
 > - **You assume all risk**  -  authors are not liable for damage or injury.
+>
+> Full text: [`docs/WARNING.md`](docs/WARNING.md)
 
----
-## Demo video
+> **Hardware upgrade required for printing:** Motion and Klipper MCU duties need a **3/4-axis host** and **toolhead board** (see below). This S1-SOC image is for the **companion display/camera node**. Repinning JST connectors and high-voltage work can **destroy hardware** or **cause fire**. See [`docs/UPGRADE_PATH.md`](docs/UPGRADE_PATH.md).
 
-Hardware overview and header pin identification (case light bar, RGB JST, +LED-):
+## Target architecture (read before flash)
 
-https://github.com/xateesix/M1-SOC-Armbian-Public/blob/main/Media/VID_20260615_141308204.mp4
+### Motion stack (required for Klipper printing)
 
-Download: [Media/VID_20260615_141308204.mp4](Media/VID_20260615_141308204.mp4) (~45 MB)
+| Part | Example |
+|------|---------|
+| **Host** (3 or 4 axis + Klipper MCU) | [BIGTREETECH Manta M4P](https://www.biqu.equipment/products/bigtreetech-manta-m4p) |
+| **Toolhead / CNC board** | [FYSETC H36](https://www.fysetc.com/products/fysetc-h36-mainboard) |
 
-## Boot logo preview
+This combo does the **heavy lifting**  -  steppers, hotend, bed, probe, and mainline Klipper firmware on the MCU.
 
-![Custom boot logo (480x272)](Media/boot-logo-artillery.bmp)
+**Work in progress:** **Z-stop / Z-probe** still required. Current direction: **Sovol Eddy** in a **custom housing** on the front print head cover. The H36 is chosen for high-temp rating, **3-wire PWM** fan headers, enough GPIO for current and future hardware, and hoped **sideways fit** inside the print head cover.
+
+Details: [`docs/UPGRADE_PATH.md`](docs/UPGRADE_PATH.md).
+
+### S1-SOC companion (this repository)
+
+Flash this repo's image on the **factory S1-SOC** to drive:
+
+- **KlipperScreen** on the built-in **480x272** display
+- **Crowsnest** for USB webcam streaming to your Klipper stack
+
+The companion talks to your **real Klipper host** (Moonraker on the Manta side) over the network. It does **not** replace the motion boards.
 
 
+Configuration guide (KlipperScreen  ->  Moonraker IP, Crowsnest on companion, Mainsail/Fluidd webcam URL): [`docs/COMPANION_SETUP.md`](docs/COMPANION_SETUP.md).
+
+Skilled **JST repinning**, **mains / 24 V** awareness, and acceptance of serious risk are required. See [`docs/WARNING.md`](docs/WARNING.md).
 
 ## What this is
 
-Armbian-based replacement firmware for the **RK3308BS** SoC on the **Artillery M1 Pro X1** (S1-SOC). It targets a lean Linux host for Klipper development, with display and serial console working. It is **not** a drop-in factory UI replacement.
+Experimental **Armbian eMMC firmware** for the **RK3308BS S1-SOC** on the Artillery M1 Pro X1. It replaces the factory Linux image with a lean OS intended as a **KlipperScreen + Crowsnest companion node**, using the stock display and WiFi.
 
-## Quick start
+This repository provides the **companion-board firmware and build pipeline**, not the main Klipper MCU firmware for the Manta/H36 stack.
+
+## Hardware overview (video)
+
+Board overview and control-header pin identification (case light bar, RGB JST, +LED-):
+
+<video controls src="Media/VID_20260615_141308204.mp4" style="max-width: 640px;"></video>
+
+Download: [Media/VID_20260615_141308204.mp4](Media/VID_20260615_141308204.mp4) (~45 MB)
+
+## USB-C data cable (required for flash)
+
+MASKROM flashing and RKDevTool need a **data-capable** USB connection from your PC to the control board USB port.
+
+| Need | Detail |
+|------|--------|
+| **Cable** | Good-quality **USB-C data cable** (USB-C to USB-A or USB-C, matching your PC) |
+| **Not sufficient** | Charge-only cables, many cheap phone cables, or long/under-spec cables |
+| **Symptom if wrong** | RKDevTool never sees the device, or download fails mid-flash |
+
+Use a cable rated for **data + power**. Short, branded or known data cables are more reliable than generic charge cords. If flash is unstable, try another cable and USB port before changing firmware.
+
+## RKDevTool (required on Windows)
+
+Rockchip firmware flash and the final eMMC **pack** step both use **RKDevTool** on a **Windows PC**. This repository does not bundle RKDevTool.
+
+| Need | Detail |
+|------|--------|
+| **Tool** | RKDevTool (v2.86 or newer recommended)  -  includes `RKDevTool.exe` for flashing and `bin/AFPTool.exe` + `bin/RKImageMaker.exe` for packing |
+| **Driver** | Rockchip USB driver via **DriverAssistant** (install before first flash) |
+| **Use** | **Upgrade Firmware** tab with a monolithic `.img` (not balenaEtcher / raw `dd`) |
+| **USB cable** | Good-quality **USB-C data cable** (see section above) |
+| **Recovery** | Board in **MASKROM** (recovery button / maskrom pads + USB) |
+
+**Download and documentation:**
+
+- **Firefly** (ROC-RK3308-CC / RK3308): [Resource downloads (RKDevTool)](https://en.t-firefly.com/doc/download/53.html)  -  [Burning firmware guide](https://wiki.t-firefly.com/en/ROC-RK3308-CC/burning_firmware.html)
+- **Radxa** (Rockchip tools): [RKDevTool documentation](https://docs.radxa.com/en/zero/zero3/low-level-dev/rkdevtool)  -  [Windows tools download](https://dl.radxa.com/tools/windows/) (`RKDevTool_Release_v2.86.zip`, `DriverAssistant`)
+
+After installing, run `RKDevTool.exe` as Administrator. Flash steps: [`FLASH_RKDEVTOOL.md`](FLASH_RKDEVTOOL.md).
+
+## USB serial adapter (recommended)
+
+A **USB to TTL serial adapter** lets you see boot logs and log in when WiFi or the display are not set up.
+
+| Need | Detail |
+|------|--------|
+| **Adapter** | FTDI **FT232RL** USB-TTL (3.3 V logic)  -  e.g. [DSD TECH SH-U09C](https://www.amazon.com/DSD-TECH-Adapter-FT232RL-Compatible/dp/B07BBPX8B8) |
+| **Level** | Set adapter jumper to **3.3V** (RK3308 UART is 3.3 V TTL) |
+| **Wiring** | GND  ->  GND, adapter TXD  ->  board RX, adapter RXD  ->  board TX (UART3 header) |
+| **Baud** | **1500000** |
+| **Console** | **`ttyFIQ0`** on the running system |
+
+Use PuTTY, Tera Term, or `picocom` at **1500000 8N1**. FTDI VCP drivers: [ftdichip.com](https://ftdichip.com/drivers/vcp-drivers/).
+
+Full wiring and terminal notes: [`docs/SERIAL_CONSOLE.md`](docs/SERIAL_CONSOLE.md).
+
+## Download and flash (companion image)
+
+1. From **GitHub Releases**, download `rk3308bs-1.0.0-emmc-fixed-v64.img`
+2. Flash with RKDevTool  ->  **Upgrade Firmware**
+3. **Change the default password** on first login
+
+| Account | Username | Default password |
+|---------|----------|------------------|
+| Normal user | `m1prox1` | `m1prox1` |
+| Root | `root` | `m1prox1` |
+
+WiFi is **not** configured on the published image.
+
+Release assets: [`docs/RELEASE.md`](docs/RELEASE.md)
+
+## Build from source (GPL / customization)
+
+Source code and build scripts are in this repository. Large binaries are on **GitHub Releases** as `build-artifacts-v0.64.1.tar.gz`.
+
+The v64 pipeline **repatches and repacks** those inputs for the **S1-SOC companion image**.
+
+### Build requirements
+
+| Component | Notes |
+|-----------|--------|
+| **Linux / WSL2** | Ubuntu recommended  -  patch, boot build, staging |
+| **Windows + RKDevTool** | Final pack step  -  see RKDevTool section above |
+| **Serial** | USB-TTL adapter (FT232RL, 3.3 V)  -  see section above |
+
+### Steps
 
 ```bash
-git clone https://github.com/xateesix/M1-SOC-Armbian-Public.git
-cd M1-SOC-Armbian-Public
-./configure.sh          # prompts for config; installs deps + clones Armbian/kernel sources
-./setup-validate.sh     # optional checks
-bash tools/build-release-v64.sh   # WSL/Linux  ->  eMMC image
+git clone <this-repository-url>
+cd <repository-directory>
+
+./configure.sh
+bash setup-validate.sh
+bash tools/build-release-v64.sh
 ```
 
-Flash with **RKDevTool  ->  Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not use balenaEtcher for eMMC.
+Output: `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v64.img`
 
-## Configuration (no secrets in git)
+### What the scripts verify
+
+| Script | Role |
+|--------|------|
+| `install-build-deps.sh` | Host packages and tools |
+| `fetch-build-sources.sh` | Release tarball inputs |
+| `preflight-v64.sh` | Linux deps + tarball |
+| `setup-validate.sh` | Runs `preflight-v64.sh` |
+
+## Configuration
 
 | File | Purpose |
 |------|---------|
-| `config.env.example` | Placeholders only  -  safe to commit |
-| `configure.sh` | **Interactive**  -  creates `config.env` with your passwords |
-| `config.env` | **Git-ignored**  -  never commit |
-
-`configure.sh` prompts for:
-
-- `ROOT_PASSWORD` / `USER_NAME` (default **m1prox1**) / `USER_PASSWORD`
-- `WIFI_SSID` / `WIFI_PASSWORD` (optional  -  leave blank to configure on device)
-- Build server SSH (optional)
+| `config.env.example` | Defaults  -  safe to commit |
+| `configure.sh` | Interactive `config.env` setup |
+| `config.env` | **Local only**  -  never commit |
 
 ## Feature status (v0.64.1)
 
 | Feature | Status |
 |---------|--------|
-| eMMC boot + RKDevTool flash | **Working** |
-| Display + boot logo | **Working** |
-| Serial `ttyFIQ0` @ 1500000 | **Working** |
-| WiFi | Build-time or on-device setup |
-| MOTD / board name **A3D M1 Pro X1** | **Working** |
-| Case light bar (+LED-) | **Pin confirmed** GPIO2_B3  -  driver **pending** |
-| RGB pebbles (WS2812, 5V/G/S) | **Not supported**  -  deferred |
-| Klipper / Moonraker | Bring your own config |
+| S1-SOC companion image (boot, display, serial, WiFi base) | Working / WIP |
+| 480x272 display + boot logo | Working |
+| Serial `ttyFIQ0` @ 1500000 | Working |
+| WiFi (RTL8189FS) | On-device or custom rebuild |
+| **KlipperScreen** (companion role) | Target  -  integration WIP |
+| **Crowsnest** (companion role) | Target  -  integration WIP |
+| Main Klipper MCU (Manta M4P + H36) | **Required separate upgrade**  -  not this image |
+| Z-stop / bed probe (motion stack) | **WIP**  -  Sovol Eddy + custom cover mount |
+| Case light bar (+LED-) | Pin identified; driver in progress |
+| RGB pebbles (WS2812) | Not supported |
 | Factory Makerbase UI | Not included |
 
-## GPIO and hardware map
-
-### Confirmed
-
-| Function | Rockchip | libgpiod | sysfs |
-|----------|----------|----------|-------|
-| Case light bar (+LED-) | GPIO2_B3 | gpiochip2 line 11 | gpio75 |
-| Onboard blue LED | GPIO0_A5 | gpiochip0 line 5 |  -  |
-| Onboard green LED | GPIO0_A6 | gpiochip0 line 6 |  -  |
-| Display | LCDC RGB | gpio1/gpio2 | backlight PWM |
-| SD / eMMC | SDIO/eMMC | gpio3/gpio4 |  -  |
-
-**Light bar:** factory uses **24 V digital enable** on GPIO2_B3, not PWM0. Current DTB still targets PWM0  -  fix planned.
-
-### RGB NeoPixel (deferred)
-
-| Candidate | libgpiod | Notes |
-|-----------|----------|-------|
-| SPI1 MOSI m1 | gpiochip2 line 5 | WS2812-via-SPI |
-| SPI1 MOSI m0 | gpiochip3 line 12 | Alt route |
-| GPIO bitbang | gpiochip0 line 1 | Test default |
-
-Factory image has no working `[neopixel]` / Moonraker `[wled]` path. S header often sits at ~5 V with no data driver.
-
-### On-board tools
-
-```bash
-sudo factory-led-audit.sh
-sudo gpio-dmm-probe.sh gpiochip2 11 45 5
-```
-
-## Custom boot logo
-
-1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480x272 grayscale BMP)
-2. `python3 tools/patch-resource-logos.py --template <resource.img> --logo logo.bmp --output out.img`
-3. Rebuild boot: `bash tools/build-boot-v64.sh` then repack eMMC image
-
-See `docs/BOOT_LOGO.md`.
-
-## On-device documentation
-
-When built with `tools/patch-rootfs-public.sh`, docs install to:
-
-```
-/home/m1prox1/docs/
-  README.md
-  WARNING.md
-  GPIO_AND_HARDWARE.md
-  BOOT_LOGO.md
-  CONFIGURE_AND_BUILD.md
-```
-
-Default login user: **m1prox1** (password from `configure.sh`).
+GPIO map: [`docs/GPIO_AND_HARDWARE.md`](docs/GPIO_AND_HARDWARE.md)  
+Boot logo: [`docs/BOOT_LOGO.md`](docs/BOOT_LOGO.md)
 
 ## Build pipeline
 
-```
-configure.sh  ->  config.env
+```text
+configure.sh  ->  config.env (BUILD_ARTIFACTS_URL)
+fetch-build-sources.sh  ->  tarball + partition templates
+preflight-v64.sh  ->  verify Linux deps + inputs
+
 build-release-v64.sh
-  |-- build-boot-v64.sh      (kernel + DTB + boot logo resource)
+  |-- build-boot-v64.sh
   |-- patch-rootfs-v64-debugfs.sh
   |-- stage-pack-v64.sh
-  -- windows-pack-update.ps1 -> rk3308bs-1.0.0-emmc-fixed-v64.img
+  -- windows-pack-update.ps1
 ```
 
 ## Repository layout
 
 | Path | Description |
 |------|-------------|
-| `tools/` | Build, patch, flash, GPIO audit scripts |
-| `patches/` | Kernel/DTS patches |
-| `factory_fresh/` | Factory reference images (not in git releases) |
-| `releases/` | Built `.img` artifacts (git-ignored) |
-| `docs/` | Public documentation |
+| `configure.sh` | Interactive configuration |
+| `setup-validate.sh` | Pre-build verification |
+| `tools/` | v64 companion image build scripts |
+| `patches/` | Kernel and DTS patches (GPL) |
+| `docs/` | User documentation |
+| `releases/` | Build output (git-ignored) |
 
 ## License and disclaimer
 
-Provided as-is for research and self-hosting. Artillery, Makerbase, Klipper, and Armbian are trademarks of their respective owners. This project is not affiliated with Artillery 3D.
+GPL-licensed components remain under their respective licenses. Provided as-is for research and self-hosting. Not affiliated with Artillery 3D.
 
 ## Changelog
 
-See `CHANGELOG.md`  -  **v0.64.1** public release with hardware documentation and build tooling.
+See [`CHANGELOG.md`](CHANGELOG.md).

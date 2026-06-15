@@ -2476,3 +2476,9 @@ userpatches-chroot/25-rk3308bs-emmc-layout.sh
 userpatches-chroot/25-rk3308bs-rockchip-resize.sh
 userpatches-chroot/30-rk3308bs-preconfigure.sh
 userpatches-customize-image.sh
+
+config.env.public.example
+tools/make-build-artifacts-tarball.sh
+
+docs/MAINTAINER.md
+tools/push-to-public.sh

@@ -1,13 +1,26 @@
 # RK3308BS  -  RKDevTool flash guide (Artillery M1 Pro S1-SOC)
 
-## Use Upgrade Firmware + monolithic `.img` (factory workflow)
+## Install RKDevTool (not included in this repo)
 
-This is the **correct** workflow  -  the same one that worked on **June 4** with the factory image.
+Use a **Windows PC**. Download RKDevTool and the Rockchip USB driver from vendor tool pages:
+
+| Source | Links |
+|-----|----|
+| **Firefly** | [RKDevTool download](https://en.t-firefly.com/doc/download/53.html)  -  [ROC-RK3308-CC burning guide](https://wiki.t-firefly.com/en/ROC-RK3308-CC/burning_firmware.html) |
+| **Radxa** | [RKDevTool docs](https://docs.radxa.com/en/zero/zero3/low-level-dev/rkdevtool)  -  [Windows tools](https://dl.radxa.com/tools/windows/) |
+
+Recommended: `RKDevTool_Release_v2.86.zip` plus **DriverAssistant**. Install the driver first, then run `RKDevTool.exe` as Administrator.
+
+## USB cable
+
+Use a **good-quality USB-C data cable** between the PC and the board USB port. Charge-only or poor cables often prevent MASKROM detection or cause failed downloads. Try a short, known data cable and a direct motherboard USB port if RKDevTool does not see the device.
+
+## Use Upgrade Firmware + monolithic `.img`
 
 1. Enter **MASKROM** (recovery button / maskrom pads + USB).
-2. Open **RKDevTool v2.86** from this repo folder.
+2. Open **RKDevTool**.
 3. Tab: **Upgrade Firmware** (second tab).
-4. **Firmware:** browse to a single monolithic `.img` file (see table below).
+4. **Firmware:** browse to a single monolithic `.img` file.
    - Do **not** load a custom `config.cfg` with separate partition files.
    - Do **not** use **Advanced  ->  Write by address**.
 5. Click **Upgrade** / **Run**.
@@ -19,9 +32,9 @@ This is the **correct** workflow  -  the same one that worked on **June 4** with
    - `Download Firmware Success` (ret=0, not `ret=1`)
 7. Unplug USB, power cycle.
 
-If **Download Boot** fails to start, then (and only then):
+If **Download Boot** fails to start:
 
-- **Advanced**  ->  Download Loader  ->  `factory_fresh/03_partitions/MiniLoaderAll.bin`
+- **Advanced**  ->  **Download Loader**  ->  use `MiniLoaderAll.bin` from your partition templates or factory extract
 - Immediately repeat step 5 on **Upgrade Firmware** with the **full** `.img`.
 
 ---
@@ -37,7 +50,7 @@ KLP_IMG_ARTILLERY_M1_PRO_S1-SOC_20251126_Beta (1)/KLP_IMG_ARTILLERY_M1_PRO_S1-SO
 Unpacked structure matches our repacks:
 
 | Component | Factory | Our repacks |
-|-----------|---------|-------------|
+|--------|------|-------|
 | `boot.bin` (MiniLoader) | 321870 bytes | **identical** |
 | `package-file` layout | standard Rockchip | **identical** |
 | `parameter.txt` | `TYPE: GPT`, `MAGIC: 0x5041524B` | same format |
@@ -50,7 +63,7 @@ If factory `.img` works on Upgrade but a custom `.img` does not, the problem is 
 ## Images
 
 | File | When to use |
-|------|-------------|
+|---|-------|
 | `KLP_IMG_ARTILLERY_..._Beta.img` | **Recovery**  -  known-good factory |
 | `SMOKE_v2_repack_only.img` | Validate repack pipeline (factory contents) |
 | `rk3308bs-1.0.0-emmc-fixed.img` | Symlink/copy of **latest built** `-vNN.img` (currently **v43** if v45 not built yet) |
@@ -67,7 +80,7 @@ If factory `.img` works on Upgrade but a custom `.img` does not, the problem is 
 Factory GPT layout (reference):
 
 | # | LBA | Size | Name |
-|---|-----|------|------|
+|---|-----|---|---|
 | 1 | 0x2000 | 0x1000 | uboot |
 | 2 | 0x3000 | 0x1000 | trust |
 | 3 | 0x4000 | 0x800 | misc |
@@ -89,7 +102,7 @@ Download Firmware Start
   Start to download trust, offset=0x3000
   Start to download uboot, offset=0x2000
   Start to download boot,   offset=0xe800
-  Start to download rootfs, offset=0x13000   ← ~5 GB, several minutes
+  Start to download rootfs, offset=0x13000   Ã¢â€ Â ~5 GB, several minutes
   Start to download recovery, offset=0x4800
   Start to download misc, offset=0x4000
 Download Firmware Success
@@ -103,7 +116,7 @@ Reset Device Success
 ### Pattern A  -  Write by address / custom config
 
 ```
-Download parameter at 0x00000000 ...     ← destroys GPT at LBA 0
+Download parameter at 0x00000000 ...     Ã¢â€ Â destroys GPT at LBA 0
 RunProc is ending, ret=1
 ERROR: GetParameter_Loader->Check parameter tag failed!
 ```
@@ -116,7 +129,7 @@ Cause: **Advanced  ->  Write by address**, or a `config.cfg` that lists `paramet
 Download uboot at 0x00002000 ...
 Download trust at 0x00003000 ...
 Download boot at 0x0000e800 ...
-Download armbian-serial-soc at 0x00000000 ...   ← wrong item at LBA 0
+Download armbian-serial-soc at 0x00000000 ...   Ã¢â€ Â wrong item at LBA 0
 RunProc is ending, ret=1
 ```
 
@@ -131,7 +144,7 @@ Flash finishes in under ~30 seconds on a multi-GB image  ->  only loader/IDB wri
 ## What each symptom means
 
 | Symptom | Cause |
-|---------|--------|
+|------|-----|
 | Instant MASKROM, no button | IDB / boot sectors corrupt (bad or partial flash) |
 | No partition table in MASKROM | GPT never created (`Gpt=1` path not run) |
 | U-Boot `=>` + pxelinux / PXE | Boot partition empty, **truncated boot.img**, or **broken boot.img header** |
@@ -227,7 +240,7 @@ Kernel command line: ... root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 root
 EXT4-fs (mmcblk0p6): mounted filesystem with ordered data mode
 ```
 
-### Boot loop after “Welcome to Armbian” (`Temperature too high`)
+### Boot loop after Ã¢â‚¬Å“Welcome to ArmbianÃ¢â‚¬Â (`Temperature too high`)
 
 **Cause:** Custom DTB (v8) is missing the factory **`/otp`** node used to calibrate the TSADC. The sensor reads too hot  ->  instant critical trip  ->  `reboot: HARDWARE PROTECTION shutdown`  ->  loop. v8 otherwise works (root mounts, systemd starts).
 
@@ -326,7 +339,7 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 ### Why this happens
 
 | Cause | What happened |
-|-------|----------------|
+|----|----------|
 | `Invalid DTB hash` | Custom DTB in `resource.img` without RSCE SHA1 update (fixed in v6+) |
 | Boot loop / `image overwritten` | Kernel decompress overlaps FDT at `0x01f00000` (fixed in v7 uboot env + hash) |
 | Kernel panic `unknown-block(0,0)` | DTB missing `root=PARTUUID=...` in `/chosen/bootargs` (fixed in v8+) |
@@ -346,7 +359,7 @@ If `saveenv` succeeds, the next boot should load the kernel (watch for Linux mes
 **RKDevTool "Erase Flash" does NOT remove the GPT.** It wipes partition *data* (zeros flash blocks). The partition table layout often persists or is immediately **rebuilt** on the next flash.
 
 | Action | GPT effect | Data effect |
-|--------|------------|-------------|
+|-----|------|-------|
 | **Erase Flash** (Advanced) | GPT usually **unchanged** | Partition contents zeroed |
 | **Upgrade Firmware** + monolithic `.img` | **`Gpt=1` rebuilds GPT** from `parameter.txt` inside the image | Writes trust, uboot, boot, rootfs, etc. |
 | **Factory full image** flash | Full GPT + all partitions | Clean baseline |

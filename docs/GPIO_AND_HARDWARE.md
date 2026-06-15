@@ -1,5 +1,5 @@
-# GPIO map  -  see README.md for full table.
+# GPIO map
 
 Confirmed: case light bar = GPIO2_B3 (gpiochip2 line 11, gpio75), 24 V enable.
-RGB NeoPixel: not supported v0.64.1. Candidates documented in README.
-Serial: ttyFIQ0 @ 1500000.
+RGB NeoPixel: not supported v0.64.1.
+Serial console: ttyFIQ0 @ 1500000  -  see docs/SERIAL_CONSOLE.md.
