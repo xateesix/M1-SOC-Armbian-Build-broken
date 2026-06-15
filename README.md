@@ -11,6 +11,19 @@
 > - **You assume all risk**  -  authors are not liable for damage or injury.
 
 ---
+## Demo video
+
+Hardware overview and header pin identification (case light bar, RGB JST, +LED-):
+
+https://github.com/xateesix/M1-SOC-Armbian-Public/blob/main/Media/VID_20260615_141308204.mp4
+
+Download: [Media/VID_20260615_141308204.mp4](Media/VID_20260615_141308204.mp4) (~45 MB)
+
+## Boot logo preview
+
+![Custom boot logo (480x272)](Media/boot-logo-artillery.bmp)
+
+
 
 ## What this is
 
@@ -19,8 +32,8 @@ Armbian-based replacement firmware for the **RK3308BS** SoC on the **Artillery M
 ## Quick start
 
 ```bash
-git clone https://github.com/xateesix/M1-SOC-Armbian-Build.git
-cd M1-SOC-Armbian-Build
+git clone https://github.com/xateesix/M1-SOC-Armbian-Public.git
+cd M1-SOC-Armbian-Public
 ./configure.sh          # prompts for config; installs deps + clones Armbian/kernel sources
 ./setup-validate.sh     # optional checks
 bash tools/build-release-v64.sh   # WSL/Linux  ->  eMMC image
@@ -89,7 +102,7 @@ sudo gpio-dmm-probe.sh gpiochip2 11 45 5
 
 ## Custom boot logo
 
-1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480Ã - 272 grayscale BMP)
+1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480x272 grayscale BMP)
 2. `python3 tools/patch-resource-logos.py --template <resource.img> --logo logo.bmp --output out.img`
 3. Rebuild boot: `bash tools/build-boot-v64.sh` then repack eMMC image
 
@@ -118,7 +131,7 @@ build-release-v64.sh
   |-- build-boot-v64.sh      (kernel + DTB + boot logo resource)
   |-- patch-rootfs-v64-debugfs.sh
   |-- stage-pack-v64.sh
-  \-- windows-pack-update.ps1 -> rk3308bs-1.0.0-emmc-fixed-v64.img
+  -- windows-pack-update.ps1 -> rk3308bs-1.0.0-emmc-fixed-v64.img
 ```
 
 ## Repository layout
@@ -138,17 +151,3 @@ Provided as-is for research and self-hosting. Artillery, Makerbase, Klipper, and
 ## Changelog
 
 See `CHANGELOG.md`  -  **v0.64.1** public release with hardware documentation and build tooling.
-## Dual repository workflow
-
-| Remote | Purpose |
-|--------|---------|
-| **Private** (`origin`) | Full development tree, probe scripts, local configs |
-| **Public** (`public`) | Sanitized export for community use |
-
-```bash
-git push origin main              # private: all work
-bash tools/push-to-public.sh      # public: scrubbed export
-```
-
-Set `PRIVATE_REPO_URL` and `PUBLIC_REPO_URL` in `config.env`.
-

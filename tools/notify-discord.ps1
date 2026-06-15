@@ -1,8 +1,23 @@
-﻿param(
+﻿# Local/build-host only — not exported to public repo.
+param(
     [Parameter(Mandatory = $true)]
     [string] $Message
 )
-$Webhook = 'https://discord.com/api/webhooks/1515772395624071278/V3EfBQJEK9QZivzRUoE7Za7Ubb9gp3pVlCGqQsNJmVaPuIYX_G401AmWJ_2B_VIYYvWc'
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Repo = Split-Path -Parent $ScriptDir
+$Config = Join-Path $Repo 'config.env'
+if (Test-Path $Config) {
+    Get-Content $Config | ForEach-Object {
+        if ($_ -match '^\s*DISCORD_WEBHOOK_URL\s*=\s*"?([^"#]+)"?\s*$') {
+            $env:DISCORD_WEBHOOK_URL = $Matches[1].Trim()
+        }
+    }
+}
+$Webhook = $env:DISCORD_WEBHOOK_URL
+if (-not $Webhook) {
+    Write-Error 'Set DISCORD_WEBHOOK_URL in config.env or environment'
+    exit 1
+}
 $body = @{ content = $Message } | ConvertTo-Json -Compress
 try {
     $resp = Invoke-WebRequest -Uri $Webhook -Method Post -Body $body -ContentType 'application/json' -UseBasicParsing
