@@ -1,14 +1,14 @@
-# A3D M1 Pro X1 — Armbian eMMC Firmware (RK3308BS)
+﻿# A3D M1 Pro X1 â€” Armbian eMMC Firmware (RK3308BS)
 
-**Version v0.64.1** — experimental community firmware for the Artillery M1 Pro S1-SOC control board.
+**Version v0.64.1** â€” experimental community firmware for the Artillery M1 Pro S1-SOC control board.
 
-> ## WARNING — READ FIRST
+> ## WARNING â€” READ FIRST
 >
-> - **Experimental** — not supported by Artillery 3D; no warranty.
-> - **Void warranty** — flashing and hardware mods void manufacturer warranty.
-> - **Dangerous voltages** — printer has **mains AC** and **24 V DC**. Wrong wiring can cause fire, shock, or damage. Work unplugged unless qualified.
-> - **Extra hardware required** — USB-serial adapter, RKDevTool + Windows PC, possible eMMC flash setup, etc.
-> - **You assume all risk** — authors are not liable for damage or injury.
+> - **Experimental** â€” not supported by Artillery 3D; no warranty.
+> - **Void warranty** â€” flashing and hardware mods void manufacturer warranty.
+> - **Dangerous voltages** â€” printer has **mains AC** and **24 V DC**. Wrong wiring can cause fire, shock, or damage. Work unplugged unless qualified.
+> - **Extra hardware required** â€” USB-serial adapter, RKDevTool + Windows PC, possible eMMC flash setup, etc.
+> - **You assume all risk** â€” authors are not liable for damage or injury.
 
 ---
 
@@ -23,23 +23,23 @@ git clone https://github.com/xateesix/M1-SOC-Armbian-Build.git
 cd M1-SOC-Armbian-Build
 ./configure.sh          # prompts for passwords, WiFi, user m1prox1
 ./setup-validate.sh     # optional checks
-bash tools/build-release-v64.sh   # WSL/Linux → eMMC image
+bash tools/build-release-v64.sh   # WSL/Linux â†’ eMMC image
 ```
 
-Flash with **RKDevTool → Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not use balenaEtcher for eMMC.
+Flash with **RKDevTool â†’ Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not use balenaEtcher for eMMC.
 
 ## Configuration (no secrets in git)
 
 | File | Purpose |
 |------|---------|
-| `config.env.example` | Placeholders only — safe to commit |
-| `configure.sh` | **Interactive** — creates `config.env` with your passwords |
-| `config.env` | **Git-ignored** — never commit |
+| `config.env.example` | Placeholders only â€” safe to commit |
+| `configure.sh` | **Interactive** â€” creates `config.env` with your passwords |
+| `config.env` | **Git-ignored** â€” never commit |
 
 `configure.sh` prompts for:
 
 - `ROOT_PASSWORD` / `USER_NAME` (default **m1prox1**) / `USER_PASSWORD`
-- `WIFI_SSID` / `WIFI_PASSWORD` (optional — leave blank to configure on device)
+- `WIFI_SSID` / `WIFI_PASSWORD` (optional â€” leave blank to configure on device)
 - Build server SSH (optional)
 
 ## Feature status (v0.64.1)
@@ -51,8 +51,8 @@ Flash with **RKDevTool → Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not
 | Serial `ttyFIQ0` @ 1500000 | **Working** |
 | WiFi | Build-time or on-device setup |
 | MOTD / board name **A3D M1 Pro X1** | **Working** |
-| Case light bar (+LED-) | **Pin confirmed** GPIO2_B3 — driver **pending** |
-| RGB pebbles (WS2812, 5V/G/S) | **Not supported** — deferred |
+| Case light bar (+LED-) | **Pin confirmed** GPIO2_B3 â€” driver **pending** |
+| RGB pebbles (WS2812, 5V/G/S) | **Not supported** â€” deferred |
 | Klipper / Moonraker | Bring your own config |
 | Factory Makerbase UI | Not included |
 
@@ -63,12 +63,12 @@ Flash with **RKDevTool → Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not
 | Function | Rockchip | libgpiod | sysfs |
 |----------|----------|----------|-------|
 | Case light bar (+LED-) | GPIO2_B3 | gpiochip2 line 11 | gpio75 |
-| Onboard blue LED | GPIO0_A5 | gpiochip0 line 5 | — |
-| Onboard green LED | GPIO0_A6 | gpiochip0 line 6 | — |
+| Onboard blue LED | GPIO0_A5 | gpiochip0 line 5 | â€” |
+| Onboard green LED | GPIO0_A6 | gpiochip0 line 6 | â€” |
 | Display | LCDC RGB | gpio1/gpio2 | backlight PWM |
-| SD / eMMC | SDIO/eMMC | gpio3/gpio4 | — |
+| SD / eMMC | SDIO/eMMC | gpio3/gpio4 | â€” |
 
-**Light bar:** factory uses **24 V digital enable** on GPIO2_B3, not PWM0. Current DTB still targets PWM0 — fix planned.
+**Light bar:** factory uses **24 V digital enable** on GPIO2_B3, not PWM0. Current DTB still targets PWM0 â€” fix planned.
 
 ### RGB NeoPixel (deferred)
 
@@ -89,7 +89,7 @@ sudo gpio-dmm-probe.sh gpiochip2 11 45 5
 
 ## Custom boot logo
 
-1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480×272 grayscale BMP)
+1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480Ã—272 grayscale BMP)
 2. `python3 tools/patch-resource-logos.py --template <resource.img> --logo logo.bmp --output out.img`
 3. Rebuild boot: `bash tools/build-boot-v64.sh` then repack eMMC image
 
@@ -113,12 +113,12 @@ Default login user: **m1prox1** (password from `configure.sh`).
 ## Build pipeline
 
 ```
-configure.sh → config.env
+configure.sh â†’ config.env
 build-release-v64.sh
-  ├── build-boot-v64.sh      (kernel + DTB + boot logo resource)
-  ├── patch-rootfs-v64-debugfs.sh
-  ├── stage-pack-v64.sh
-  └── windows-pack-update.ps1 → rk3308bs-1.0.0-emmc-fixed-v64.img
+  â”œâ”€â”€ build-boot-v64.sh      (kernel + DTB + boot logo resource)
+  â”œâ”€â”€ patch-rootfs-v64-debugfs.sh
+  â”œâ”€â”€ stage-pack-v64.sh
+  â””â”€â”€ windows-pack-update.ps1 â†’ rk3308bs-1.0.0-emmc-fixed-v64.img
 ```
 
 ## Repository layout
@@ -137,4 +137,4 @@ Provided as-is for research and self-hosting. Artillery, Makerbase, Klipper, and
 
 ## Changelog
 
-See `CHANGELOG.md` — **v0.64.1** public release with credential cleanup and hardware documentation.
+See `CHANGELOG.md` â€” **v0.64.1** public release with hardware documentation and build tooling.
