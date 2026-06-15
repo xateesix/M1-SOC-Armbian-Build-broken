@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Export sanitized tree to PUBLIC_REPO_URL. Private work stays on origin.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,7 +7,7 @@ CONFIG="$REPO/config.env"
 [[ -f "$CONFIG" ]] && source "$CONFIG"
 PUBLIC_URL="${PUBLIC_REPO_URL:-}"
 [[ -n "$PUBLIC_URL" ]] || { echo "Set PUBLIC_REPO_URL in config.env"; exit 1; }
-EXPORT="$(mktemp -d)"
+EXPORT="$(mktemp -d "$REPO/.wsl-tmp/public-export.XXXXXX")"
 trap 'rm -rf "$EXPORT"' EXIT
 git clone --local "$REPO" "$EXPORT/repo"
 cd "$EXPORT/repo"
@@ -23,7 +23,8 @@ remove_ignore_path() {
     done < <(git ls-files "$path" 2>/dev/null || true)
     shopt -s nullglob
     for f in $path; do
-      [[ -e "$f" ]] && rm -rf "$f"
+      [[ -e "$f" ]] || continue
+      rm -rf "$f"
     done
     shopt -u nullglob
     return 0
