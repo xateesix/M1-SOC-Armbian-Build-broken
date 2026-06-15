@@ -20,3 +20,5 @@ tools/_remote_check.py
 tools/_patch_remote.py
 tools/_test_notify.py
 tools/create-github-release.ps1
+
+Media/

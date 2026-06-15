@@ -33,3 +33,5 @@ teraterm-log/
 *.dtb
 
 config.env
+
+Media/
