@@ -1,0 +1,10 @@
+#!/bin/bash
+# Artillery product branding ? after Armbian logo, before version line.
+if command -v figlet >/dev/null 2>&1; then
+	FONT=term
+	figlet -f term -v >/dev/null 2>&1 || FONT=small
+	printf '\e[0;96m%s\e[0m\n' "$(figlet -f "$FONT" 'A3D M1 Pro X1')"
+else
+	printf '\e[0;96m   A3D M1 Pro X1\e[0m\n'
+fi
+printf '\n'

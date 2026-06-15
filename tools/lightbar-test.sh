@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Set white LED light bar to PWM brightness (0-255 or percent).
 set -euo pipefail
 LED=/sys/class/leds/lightbar:white

@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""WS2812/NeoPixel test via GPIO0_A1 (bit 1) register bitbang on RK3308."""
+"""WS281x NeoPixel test via GPIO0_A1 (RGB, WLED default 100) (bit 1) register bitbang on RK3308."""
 import mmap
 import os
 import struct
@@ -10,7 +10,7 @@ GPIO0_BASE = 0xFF220000
 GPIO_DR = 0x00
 GPIO_DDR = 0x04
 PIN = 1  # GPIO0_A1
-NUM_LEDS = int(sys.argv[1]) if len(sys.argv) > 1 else 8
+NUM_LEDS = int(sys.argv[1]) if len(sys.argv) > 1 else 66
 PAGE_SIZE = 4096
 
 
@@ -60,7 +60,7 @@ def ws2812_bit(gpio: Gpio, bit: int) -> None:
 
 
 def ws2812_pixel(gpio: Gpio, r: int, g: int, b: int) -> None:
-    val = (g << 16) | (r << 8) | b
+    val = (r << 16) | (g << 8) | b  # RGB per WLED
     for i in range(23, -1, -1):
         ws2812_bit(gpio, (val >> i) & 1)
     ns_delay(300)
@@ -92,3 +92,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
