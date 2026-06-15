@@ -10,7 +10,7 @@ OUT="${1:-${SCRIPT_DIR}/userpatches/firstboot.conf}"
 source "$CONFIG"
 
 USER_PASSWORD="${USER_PASSWORD:-$ROOT_PASSWORD}"
-USER_NAME="${USER_NAME:-xateesix}"
+USER_NAME="${USER_NAME:-m1prox1}"
 USER_REALNAME="${USER_REALNAME:-$USER_NAME}"
 LOCALE="${LOCALE:-en_US.UTF-8}"
 TIMEZONE="${TIMEZONE:-America/Los_Angeles}"

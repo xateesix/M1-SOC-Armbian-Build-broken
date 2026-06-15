@@ -174,10 +174,10 @@ BUILD_SERVER_HOST="ubuntu-server"    # Where Armbian builds
 BUILD_SERVER_USER="xateesix"
 BUILD_SERVER_PATH="/home/xateesix/armbian-build"
 
-WIFI_SSID="OurIOT"                   # Pre-configured in image
+WIFI_SSID="YOUR_WIFI_SSID"                   # Pre-configured in image
 WIFI_PASSWORD="mNhTYTeh#..."
 
-ROOT_PASSWORD="ztfalxtspv"           # Pre-set in image
+ROOT_PASSWORD="YOUR_PASSWORD"           # Pre-set in image
 ```
 
 ### `build-enhanced.sh` — Main Build Script (RUN THIS)

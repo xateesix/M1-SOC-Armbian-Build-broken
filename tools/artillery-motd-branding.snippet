@@ -1,5 +1,4 @@
-#!/bin/bash
-# Artillery product branding ? after Armbian logo, before version line.
+# Artillery product branding - after vendor logo, before version line.
 if command -v figlet >/dev/null 2>&1; then
 	FONT=term
 	figlet -f term -v >/dev/null 2>&1 || FONT=small

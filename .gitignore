@@ -32,5 +32,4 @@ teraterm-log/
 # Compiled DTB (rebuild from .dts)
 *.dtb
 
-# Optional: keep credentials local only (config.env is tracked for this project backup)
-# config.env
+config.env

@@ -1,230 +1,140 @@
-# Armbian Build for RK3308BS EVB
+# A3D M1 Pro X1 — Armbian eMMC Firmware (RK3308BS)
 
-Complete firmware build system with **persistent Armbian repository**, **WiFi pre-configuration**, and **automated root password setup**.
+**Version v0.64.1** — experimental community firmware for the Artillery M1 Pro S1-SOC control board.
 
-## Quick Start
-
-### 1. **Configure Settings** (One-time)
-
-Edit `config.env` with your build server, WiFi, and root password:
-
-```bash
-# USB build server details
-BUILD_SERVER_HOST="ubuntu-server"
-BUILD_SERVER_USER="xateesix"
-BUILD_SERVER_PATH="/home/xateesix/armbian-build"
-
-# WiFi credentials (pre-configured in image)
-WIFI_SSID="OurIOT"
-WIFI_PASSWORD="mNhTYTeh#p3LnRw^Ln*N3VwiD"
-
-# Root password (no interactive prompt needed on first boot)
-ROOT_PASSWORD="ztfalxtspv"
-```
-
-### 2. **Build Firmware**
-
-From Windows (or any machine with SSH):
-
-```bash
-chmod +x build-enhanced.sh
-./build-enhanced.sh
-```
-
-**What happens:**
-- ✅ SSH connects to your Ubuntu build server
-- ✅ Clones/updates persistent `~/armbian-build` (reuses across builds)
-- ✅ Copies your board config, DTS, and kernel patch
-- ✅ Creates WiFi overlay with your credentials
-- ✅ Builds kernel + full image (~25 mins)
-- ✅ Downloads final image locally
-
-### 3. **Flash to Device**
-
-#### Option A: Windows (Easiest)
-1. **balenaEtcher**: Download & open, select image + microSD card, click Flash
-2. **Or SharpAdbHelper**: File → Write Image to SD Card
-
-#### Option B: Linux/Mac
-```bash
-# Identify your microSD device
-lsblk
-
-# Flash (be CAREFUL with device selection!)
-sudo dd if=Armbian-*_rk3308bs-evb*.img of=/dev/sdX bs=4M status=progress && sync
-```
-
-### 4. **First Boot**
-
-1. Insert microSD into RK3308BS board
-2. Connect USB + power
-3. Serial console (UART3, 1500000 baud) shows boot output
-4. Root login with password from `config.env`
-5. WiFi auto-connects (SSID: OurIOT)
-
-**Check WiFi:**
-```bash
-ip addr show
-iwconfig wlan0
-```
+> ## WARNING — READ FIRST
+>
+> - **Experimental** — not supported by Artillery 3D; no warranty.
+> - **Void warranty** — flashing and hardware mods void manufacturer warranty.
+> - **Dangerous voltages** — printer has **mains AC** and **24 V DC**. Wrong wiring can cause fire, shock, or damage. Work unplugged unless qualified.
+> - **Extra hardware required** — USB-serial adapter, RKDevTool + Windows PC, possible eMMC flash setup, etc.
+> - **You assume all risk** — authors are not liable for damage or injury.
 
 ---
 
-## File Structure
+## What this is
 
-```
-Armbian/
-├── config.env                                 # Configuration (EDIT THIS)
-├── build-enhanced.sh                          # Main build script (NEW)
-├── build.sh                                   # Old build script (keep for reference)
-├── rk3308bs-evb.conf                          # Board metadata
-│   ├── rk3308bs-evb-amic-v11.dts              # Device tree source
-│   └── 0001-arm64-dts-rockchip-...patch       # Kernel patch
-└── README.md                                  # This file
-```
+Armbian-based replacement firmware for the **RK3308BS** SoC on the **Artillery M1 Pro X1** (S1-SOC). It targets a lean Linux host for Klipper development, with display and serial console working. It is **not** a drop-in factory UI replacement.
 
----
-
-## Configuration Details
-
-### Board Config (`rk3308bs-evb.conf`)
-- **SoC**: Rockchip RK3308BS (ARM Cortex-A35, 1104 MHz)
-- **RAM**: 512 MB DDR3
-- **Storage**: eMMC + microSD
-- **Console**: UART3 @ 1500000 baud
-- **U-Boot**: `evb-rk3308_defconfig`
-- **Kernel**: rockchip64 current branch (6.18+)
-
-### Device Tree (`rk3308bs-evb-amic-v11.dts`)
-Includes:
-- Memory map and clocks
-- All GPIO LEDs (power, heartbeat)
-- 4.3" RGB LCD (480×272) with PWM backlight
-- Goodix GT911 capacitive touch (I2C3)
-- RTL8189CS WiFi (SDIO with power sequence)
-- RK3308 internal ACODEC (I2S2, mic + speakers)
-- USB ports (1× OTG, 2× host)
-- All voltage regulators (core, 3.3V, 1.8V, 1.05V)
-
----
-
-## Advanced Usage
-
-### Rebuild Kernel Only (Fast)
-```bash
-./build-enhanced.sh kernel
-```
-Skips full image build, just recompiles DTB (~5 mins).
-
-### Use Local Armbian (if already cloned)
-```bash
-ARMBIAN_PATH=$HOME/armbian-build ./build-enhanced.sh
-# OR edit config.env: BUILD_SERVER=local
-```
-
-### SSH Into Build Server During Build
-```bash
-ssh xateesix@ubuntu-server
-cd ~/armbian-build
-tail -f output/logs/*.log
-```
-
-### Manual Kernel Rebuild on Server
-```bash
-ssh xateesix@ubuntu-server
-cd ~/armbian-build
-EXPERT=yes PREFER_DOCKER=no ./compile.sh kernel rockchip64-current
-```
-
----
-
-## Troubleshooting
-
-### No Serial Output After Flash
-1. Check serial connection (UART3, not UART0)
-2. Verify baud: 1500000 (unusual but correct for this board)
-3. Verify DTB in image:
-   ```bash
-   ssh xateesix@ubuntu-server
-   cd ~/armbian-build/output/images
-   mkdir -p /tmp/chk && mount -o loop,offset=$((32768*512)) *.img /tmp/chk
-   ls /tmp/chk/boot/dtb-*/rockchip/ | grep rk3308bs-evb
-   umount /tmp/chk
-   ```
-
-### Build Fails on Server
-```bash
-ssh xateesix@ubuntu-server
-cd ~/armbian-build
-tail -100 output/logs/build.log
-```
-
-### WiFi Not Connecting
-1. SSH to board: `ssh root@<ip>`
-2. Check config: `cat /etc/wpa_supplicant/wpa_supplicant.conf`
-3. Restart: `systemctl restart wpa_supplicant`
-4. Monitor: `wpa_cli status`
-
-### Root Password Not Working
-Check that the chroot script ran:
-```bash
-ssh root@<board-ip>
-cat /etc/shadow | grep root
-# Should show SHA512 hash, not blank
-```
-
----
-
-## GitHub Integration (Optional)
-
-To sync build artifacts and configs to GitHub:
+## Quick start
 
 ```bash
-cd Armbian
-git init .
-git remote add origin https://github.com/YOUR_USER/rk3308bs-armbian.git
-git add -A
-git commit -m "RK3308BS Armbian firmware"
-git push -u origin master
+git clone https://github.com/xateesix/M1-SOC-Armbian-Build.git
+cd M1-SOC-Armbian-Build
+./configure.sh          # prompts for passwords, WiFi, user m1prox1
+./setup-validate.sh     # optional checks
+bash tools/build-release-v64.sh   # WSL/Linux → eMMC image
 ```
 
-Then sync on server:
+Flash with **RKDevTool → Upgrade Firmware** (see `FLASH_RKDEVTOOL.md`). Do not use balenaEtcher for eMMC.
+
+## Configuration (no secrets in git)
+
+| File | Purpose |
+|------|---------|
+| `config.env.example` | Placeholders only — safe to commit |
+| `configure.sh` | **Interactive** — creates `config.env` with your passwords |
+| `config.env` | **Git-ignored** — never commit |
+
+`configure.sh` prompts for:
+
+- `ROOT_PASSWORD` / `USER_NAME` (default **m1prox1**) / `USER_PASSWORD`
+- `WIFI_SSID` / `WIFI_PASSWORD` (optional — leave blank to configure on device)
+- Build server SSH (optional)
+
+## Feature status (v0.64.1)
+
+| Feature | Status |
+|---------|--------|
+| eMMC boot + RKDevTool flash | **Working** |
+| Display + boot logo | **Working** |
+| Serial `ttyFIQ0` @ 1500000 | **Working** |
+| WiFi | Build-time or on-device setup |
+| MOTD / board name **A3D M1 Pro X1** | **Working** |
+| Case light bar (+LED-) | **Pin confirmed** GPIO2_B3 — driver **pending** |
+| RGB pebbles (WS2812, 5V/G/S) | **Not supported** — deferred |
+| Klipper / Moonraker | Bring your own config |
+| Factory Makerbase UI | Not included |
+
+## GPIO and hardware map
+
+### Confirmed
+
+| Function | Rockchip | libgpiod | sysfs |
+|----------|----------|----------|-------|
+| Case light bar (+LED-) | GPIO2_B3 | gpiochip2 line 11 | gpio75 |
+| Onboard blue LED | GPIO0_A5 | gpiochip0 line 5 | — |
+| Onboard green LED | GPIO0_A6 | gpiochip0 line 6 | — |
+| Display | LCDC RGB | gpio1/gpio2 | backlight PWM |
+| SD / eMMC | SDIO/eMMC | gpio3/gpio4 | — |
+
+**Light bar:** factory uses **24 V digital enable** on GPIO2_B3, not PWM0. Current DTB still targets PWM0 — fix planned.
+
+### RGB NeoPixel (deferred)
+
+| Candidate | libgpiod | Notes |
+|-----------|----------|-------|
+| SPI1 MOSI m1 | gpiochip2 line 5 | WS2812-via-SPI |
+| SPI1 MOSI m0 | gpiochip3 line 12 | Alt route |
+| GPIO bitbang | gpiochip0 line 1 | Test default |
+
+Factory image has no working `[neopixel]` / Moonraker `[wled]` path. S header often sits at ~5 V with no data driver.
+
+### On-board tools
+
 ```bash
-ssh xateesix@ubuntu-server
-cd ~/armbian-build
-git clone https://github.com/YOUR_USER/rk3308bs-armbian.git overlay
-# Copy overlay/* to userpatches/
+sudo factory-led-audit.sh
+sudo gpio-dmm-probe.sh gpiochip2 11 45 5
 ```
 
----
+## Custom boot logo
 
-## Hardware Specs
+1. `python3 tools/make-logo-bmp.py --input logo.png --output logo.bmp` (480×272 grayscale BMP)
+2. `python3 tools/patch-resource-logos.py --template <resource.img> --logo logo.bmp --output out.img`
+3. Rebuild boot: `bash tools/build-boot-v64.sh` then repack eMMC image
 
-| Component | Details |
-|-----------|---------|
-| **SoC** | Rockchip RK3308BS (Cortex-A35 ×4, 1104 MHz max) |
-| **RAM** | 512 MB DDR3 1.8V |
-| **Storage** | 8GB eMMC (1.8V) + microSD |
-| **Console** | UART3 (1500000 baud) |
-| **Display** | 4.3" 480×272 RGB LCD, PWM backlight (GPIO_PWM9) |
-| **Touch** | Goodix GT911 (I2C3) |
-| **Audio** | RK3308 internal ACODEC, I2S2 data path |
-| **WiFi** | RTL8189CS (SDIO, GPIO power sequence) |
-| **USB** | 1× OTG Type-C + 2× 5V host (USB-A) |
+See `docs/BOOT_LOGO.md`.
 
----
+## On-device documentation
 
-## Support
+When built with `tools/patch-rootfs-public.sh`, docs install to:
 
-For issues:
-1. Check this README
-2. Review build logs: `build-remote.log`
-3. Check Armbian docs: https://docs.armbian.com
-4. Armbian forum: https://forum.armbian.com
+```
+/home/m1prox1/docs/
+  README.md
+  WARNING.md
+  GPIO_AND_HARDWARE.md
+  BOOT_LOGO.md
+  CONFIGURE_AND_BUILD.md
+```
 
----
+Default login user: **m1prox1** (password from `configure.sh`).
 
-**Created**: June 2026  
-**Board**: RK3308BS EVB  
-**Kernel**: Linux rockchip64  
-**Distro**: Ubuntu Jammy (22.04 LTS)
+## Build pipeline
+
+```
+configure.sh → config.env
+build-release-v64.sh
+  ├── build-boot-v64.sh      (kernel + DTB + boot logo resource)
+  ├── patch-rootfs-v64-debugfs.sh
+  ├── stage-pack-v64.sh
+  └── windows-pack-update.ps1 → rk3308bs-1.0.0-emmc-fixed-v64.img
+```
+
+## Repository layout
+
+| Path | Description |
+|------|-------------|
+| `tools/` | Build, patch, flash, GPIO audit scripts |
+| `patches/` | Kernel/DTS patches |
+| `factory_fresh/` | Factory reference images (not in git releases) |
+| `releases/` | Built `.img` artifacts (git-ignored) |
+| `docs/` | Public documentation |
+
+## License and disclaimer
+
+Provided as-is for research and self-hosting. Artillery, Makerbase, Klipper, and Armbian are trademarks of their respective owners. This project is not affiliated with Artillery 3D.
+
+## Changelog
+
+See `CHANGELOG.md` — **v0.64.1** public release with credential cleanup and hardware documentation.

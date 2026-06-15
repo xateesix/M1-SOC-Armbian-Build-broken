@@ -30,7 +30,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
     fail "Missing config.env"
     echo ""
     echo "Create it with:"
-    echo "  cp config.env.example config.env"
+    echo "  ./configure.sh"
     echo "  # Edit with your WiFi/root password"
     exit 1
 fi

@@ -37,7 +37,7 @@ Wait ~30 minutes. Image downloads when done.
 
 After a successful build, you'll have:
 - `Armbian-unofficial_*_rk3308bs-evb_jammy_*.img` in the Armbian folder
-- WiFi pre-configured (SSID: OurIOT)
+- WiFi pre-configured (SSID: YOUR_WIFI_SSID)
 - Root password set (no interactive prompt)
 
 ---
