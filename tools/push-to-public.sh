@@ -48,7 +48,9 @@ for f in "${FILES[@]}"; do
     "$f" 2>/dev/null || true
 done
 git add -A
-git diff --cached --quiet || git commit --trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" -m "Sanitized public export"
+if ! git diff --cached --quiet; then
+  git -c user.name=xateesix -c user.email=11428050+xateesix@users.noreply.github.com commit -m "Sanitized public export"
+fi
 git remote remove public 2>/dev/null || true
 git remote add public "$PUBLIC_URL"
 git push public HEAD:main --force-with-lease
