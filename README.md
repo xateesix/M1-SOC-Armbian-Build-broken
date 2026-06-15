@@ -9,6 +9,8 @@
 > - **Dangerous voltages** â€” printer has **mains AC** and **24 V DC**. Wrong wiring can cause fire, shock, or damage. Work unplugged unless qualified.
 > - **Extra hardware required** â€” USB-serial adapter, RKDevTool + Windows PC, possible eMMC flash setup, etc.
 > - **You assume all risk** â€” authors are not liable for damage or injury.
+> - **Alternative CNC Mainboard and Toolhead board is highly recomended (I used a BTT Manta 4p and a Fysetc H36 for mine)
+> - **Still working on a Z probe solution with eddy planned, this will require modifying the toolhead cover and possibly more.
 
 ---
 
