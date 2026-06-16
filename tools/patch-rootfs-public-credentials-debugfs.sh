@@ -102,6 +102,20 @@ for pl in open(passwd_path):
     pp = pl.split(":")
     if len(pp) > 2 and pp[2] == "1000" and pp[0] != name:
         drop.add(pp[0])
+
+def dedupe_members(s):
+    seen, out = set(), []
+    for m in s.split(","):
+        if not m or m in seen:
+            continue
+        if m in drop:
+            continue
+        if m == "xateesix":
+            m = name
+        seen.add(m)
+        out.append(m)
+    return ",".join(out)
+
 lines = open(path).read().splitlines()
 out, found_g = [], False
 for line in lines:
@@ -110,24 +124,46 @@ for line in lines:
         continue
     parts = line.split(":")
     g = parts[0]
-    if g in drop:
+    if g in drop or g == "xateesix":
         continue
-    if g == "sudo":
-        members = [m for m in parts[3].split(",") if m and m not in drop]
-        if name not in members:
-            members.append(name)
-        parts[3] = ",".join(members)
-        out.append(":".join(parts))
-    elif g == name:
+    if len(parts) > 3:
+        parts[3] = dedupe_members(parts[3])
+        if g == "sudo" and name not in parts[3].split(","):
+            parts[3] = ",".join(filter(None, [parts[3], name]))
+    if g == name and parts[2] == "1000":
+        if found_g:
+            continue
         found_g = True
-        out.append(":".join(parts))
-    else:
-        out.append(line)
+    out.append(":".join(parts))
 if not found_g:
     out.append(f"{name}:x:1000:")
 open(path + ".new", "w").write("\n".join(out) + "\n")
 PY
 df_write "${STAGE}/group.new" /etc/group
+
+for _sub in subuid subgid; do
+  debugfs -R "dump /etc/$_sub ${STAGE}/$_sub" "$IMG" 2>/dev/null || continue
+  python3 - "${STAGE}/$_sub" "$USER_NAME" <<'PY'
+import sys
+path, name = sys.argv[1:3]
+lines = open(path).read().splitlines()
+out, seen = [], False
+for line in lines:
+    if not line or line.startswith("#"):
+        out.append(line)
+        continue
+    parts = line.split(":")
+    if parts[0] == "xateesix":
+        parts[0] = name
+    if parts[0] == name:
+        if seen:
+            continue
+        seen = True
+    out.append(":".join(parts))
+open(path + ".new", "w").write("\n".join(out) + "\n")
+PY
+  df_write "${STAGE}/${_sub}.new" "/etc/$_sub"
+done
 
 debugfs -w -R "mkdir /home" "$IMG" 2>/dev/null || true
 debugfs -w -R "mkdir /home/${USER_NAME}" "$IMG" 2>/dev/null || true
@@ -137,6 +173,25 @@ bash "$SCRIPT_DIR/tools/patch-rootfs-public.sh" "$STAGE"
 find "${STAGE}/home/${USER_NAME}" -type f | while read -r f; do
   df_write "$f" "/${f#${STAGE}/}"
 done
+
+df_chown() {
+  local rel="$1" mode="${2:-}"
+  debugfs -w -R "set_inode_field $rel uid 1000" "$IMG" 2>/dev/null || true
+  debugfs -w -R "set_inode_field $rel gid 1000" "$IMG" 2>/dev/null || true
+  [[ -n "$mode" ]] && debugfs -w -R "set_inode_field $rel mode $mode" "$IMG" 2>/dev/null || true
+}
+
+df_rm /home/xateesix
+debugfs -w -R "rm /home/xateesix" "$IMG" 2>/dev/null || true
+
+while IFS= read -r f; do
+  rel="/${f#${STAGE}/}"
+  if [[ -d "$f" ]]; then
+    df_chown "$rel" 040755
+  else
+    df_chown "$rel" 0100644
+  fi
+done < <(find "${STAGE}/home/${USER_NAME}" | sort)
 
 cat > "${STAGE}/wpa_supplicant.conf" <<'EOF'
 ctrl_interface=/var/run/wpa_supplicant

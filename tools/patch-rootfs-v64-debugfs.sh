@@ -16,6 +16,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/usr/local/sbin" "$STAGE/etc/modules-load.d" \
   "$STAGE/etc/systemd/system/multi-user.target.wants" \
   "$STAGE/etc/profile.d" \
+  "$STAGE/etc/systemd/system.conf.d" \
   "$STAGE/lib/modules/6.18.0-dirty/kernel/drivers/leds"
 
 for f in lightbar-test.sh neopixel-test.py fb-color-test.py probe-sdcard.sh; do
@@ -57,6 +58,13 @@ fi
 EOF
 chmod 644 "$STAGE/etc/profile.d/rk3308bs-tests.sh"
 
+cat > "$STAGE/etc/systemd/system.conf.d/fbcon-no-color.conf" <<EOF
+[Manager]
+# Framebuffer boot console tty0 cannot render systemd ANSI status colors.
+DefaultEnvironment=SYSTEMD_COLORS=0
+EOF
+chmod 644 "$STAGE/etc/systemd/system.conf.d/fbcon-no-color.conf"
+
 df_write() {
   local src="$1" dst="$2"
   debugfs -w -R "rm $dst" "$IMG" 2>/dev/null || true
@@ -67,6 +75,8 @@ df_write "$STAGE/etc/hostname" /etc/hostname
 df_write "$STAGE/etc/modules-load.d/rk3308bs-lights.conf" /etc/modules-load.d/rk3308bs-lights.conf
 df_write "$STAGE/etc/systemd/system/rk3308bs-lights-modules.service" /etc/systemd/system/rk3308bs-lights-modules.service
 df_write "$STAGE/etc/profile.d/rk3308bs-tests.sh" /etc/profile.d/rk3308bs-tests.sh
+debugfs -w -R "mkdir /etc/systemd/system.conf.d" "$IMG" 2>/dev/null || true
+df_write "$STAGE/etc/systemd/system.conf.d/fbcon-no-color.conf" /etc/systemd/system.conf.d/fbcon-no-color.conf
 df_write "$STAGE/lib/modules/6.18.0-dirty/kernel/drivers/leds/leds-pwm.ko" \
   /lib/modules/6.18.0-dirty/kernel/drivers/leds/leds-pwm.ko
 
