@@ -8,12 +8,12 @@ Turn an **otherwise barely usable or unusable** Artillery M1 Pro X1 into a **cur
 
 | Role | Hardware | Target software |
 |------|----------|-----------------|
-| **Printer / motion (heavy lifting)** | New **host + CNC toolhead** (e.g. [BTT Manta M4P](https://www.biqu.equipment/products/bigtreetech-manta-m4p) + [FYSETC H36](https://www.fysetc.com/products/fysetc-h36-mainboard)) | Mainline **Klipper** on the MCU stack  -  motion, heaters, fans, probe |
+| **Printer / motion (heavy lifting)** | New **host + CNC Mainboard with new toolhead board** (e.g. [BTT Manta M4P](https://www.biqu.equipment/products/bigtreetech-manta-m4p) + [FYSETC H36](https://www.fysetc.com/products/fysetc-h36-mainboard)) | Mainline **Klipper** on the MCU stack  -  motion, heaters, fans, probe |
 | **Display + camera node** | Factory **RK3308 S1-SOC** (this firmware) | **KlipperScreen** on the stock LCD, **Crowsnest** for webcam streaming |
 
 The S1-SOC is **not** the printer MCU. It is an **external companion**  -  UI and camera  -  while the new host + toolhead boards run Klipper for the machine.
 
-This is **work in progress** (Z-stop/probe on the motion stack, KlipperScreen/Crowsnest integration on the S1-SOC).
+This is a **work in progress** [incomplete] (Z-stop/probe on the motion stack, KlipperScreen/Crowsnest integration on the S1-SOC).
 
 > ## WARNING  -  READ FIRST
 >
@@ -38,9 +38,18 @@ This is **work in progress** (Z-stop/probe on the motion stack, KlipperScreen/Cr
 
 This combo does the **heavy lifting**  -  steppers, hotend, bed, probe, and mainline Klipper firmware on the MCU.
 
-**Work in progress:** **Z-stop / Z-probe** still required. Current direction: **Sovol Eddy** in a **custom housing** on the front print head cover. The H36 is chosen for high-temp rating, **3-wire PWM** fan headers, enough GPIO for current and future hardware, and hoped **sideways fit** inside the print head cover.
+**Work in progress:** **Z-stop / Z-probe** still required. Current direction: **Sovol Eddy** in a **custom housing** on the front print head cover. The H36 is chosen for high-temp rating, **3-wire PWM** fan headers, enough GPIO for current and future hardware, and [hopefully] **sideways fit** inside the print head cover.
 
 Details: [`docs/UPGRADE_PATH.md`](docs/UPGRADE_PATH.md).
+
+### 3D printed parts (required for rebuild)
+
+| Part | STEP model |
+|------|------------|
+| Manta M4P mounting bracket | [`models/M4P_M1Pro_Mounting_bracket.step`](models/M4P_M1Pro_Mounting_bracket.step) |
+| Power supply relocate bracket | [`models/M1-PowerSupply-Relocate.step`](models/M1-PowerSupply-Relocate.step) |
+
+Print from the STEP files or export STL in your CAD tool. Details: [`docs/UPGRADE_PATH.md`](docs/UPGRADE_PATH.md).
 
 ### S1-SOC companion (this repository)
 
@@ -217,6 +226,7 @@ build-release-v64.sh
 | `setup-validate.sh` | Pre-build verification |
 | `tools/` | v64 companion image build scripts |
 | `patches/` | Kernel and DTS patches (GPL) |
+| `models/` | Required 3D printed bracket STEP files |
 | `docs/` | User documentation |
 | `releases/` | Build output (git-ignored) |
 

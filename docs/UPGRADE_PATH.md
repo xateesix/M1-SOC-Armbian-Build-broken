@@ -22,6 +22,17 @@ The S1-SOC is an **external companion node**  -  stock LCD and network for UI an
 
 This pair runs **Klipper** for motion, heaters, fans, and (once complete) bed probing. The S1-SOC does **not** replace this stack.
 
+## 3D printed parts (required for rebuild)
+
+The motion-stack upgrade needs two **printed brackets** in the repository `models/` directory:
+
+| Part | STEP file | Purpose |
+|------|-----------|---------|
+| **Manta M4P mounting bracket** | [`M4P_M1Pro_Mounting_bracket.step`](../models/M4P_M1Pro_Mounting_bracket.step) | Mount the BTT Manta M4P inside the M1 Pro chassis |
+| **Power supply relocate bracket** | [`M1-PowerSupply-Relocate.step`](../models/M1-PowerSupply-Relocate.step) | Relocate the factory PSU to clear space for the new host |
+
+Print from the STEP source or export STL from your CAD tool before assembly.
+
 ## Why FYSETC H36 (example toolhead)
 
 | Factor | Notes |

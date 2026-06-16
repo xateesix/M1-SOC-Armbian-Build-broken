@@ -53,5 +53,15 @@ if ! git diff --cached --quiet; then
 fi
 git remote remove public 2>/dev/null || true
 git remote add public "$PUBLIC_URL"
-git push public HEAD:main --force-with-lease
+
+# Prefer Windows Git in WSL so Git Credential Manager can authenticate.
+GIT_CMD=(git)
+if [[ -x "/mnt/c/Program Files/Git/cmd/git.exe" ]]; then
+  GIT_CMD=("/mnt/c/Program Files/Git/cmd/git.exe")
+fi
+
+if ! "${GIT_CMD[@]}" push public HEAD:main --force-with-lease; then
+  echo "force-with-lease failed (empty or stale remote); retrying with --force"
+  "${GIT_CMD[@]}" push public HEAD:main --force
+fi
 echo "Pushed sanitized export to $PUBLIC_URL"

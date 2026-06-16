@@ -22,3 +22,4 @@ Details: [`UPGRADE_PATH.md`](UPGRADE_PATH.md)
 ## Hardware
 
 USB-C data cable, USB-TTL serial (FT232RL), Windows PC with RKDevTool. See [`README.md`](README.md).
+- **3D printed brackets** for Manta M4P mount and PSU relocate - see [`models/`](../models/) and [`UPGRADE_PATH.md`](UPGRADE_PATH.md).
