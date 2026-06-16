@@ -2482,3 +2482,11 @@ tools/make-build-artifacts-tarball.sh
 
 docs/MAINTAINER.md
 tools/push-to-public.sh
+tools/_check-rootfs.sh
+tools/_dump-banner.sh
+tools/_dump-wifi.sh
+tools/_inspect-rootfs.sh
+tools/_run-public-preconfigure.sh
+tools/rebuild-from-scratch-v64.sh
+tools/rebuild-public-v64.sh
+docs/FORK_AND_CI_PLAN.md

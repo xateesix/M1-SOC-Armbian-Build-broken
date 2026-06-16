@@ -10,7 +10,9 @@ function Resolve-RKDevToolBin {
     $candidates = @(
         (Join-Path $PSScriptRoot "bin"),
         (Join-Path $PSScriptRoot "..\..\bin"),
-        (Join-Path $env:USERPROFILE "Downloads\RKDevTool_Release_v2.86\RKDevTool_Release_v2.86\bin")
+        (Join-Path $env:USERPROFILE "Downloads\RKDevTool_Release_v3.32\RKDevTool_v3.32_for_window\bin"),
+        (Join-Path $env:USERPROFILE "Downloads\RKDevTool_Release_v2.86\RKDevTool_Release_v2.86\bin"),
+        (Join-Path $env:TEMP "RKDevTool_v2.86\RKDevTool_Release_v2.86\bin")
     )
     foreach ($dir in $candidates) {
         if (Test-Path (Join-Path $dir "AFPTool.exe")) {

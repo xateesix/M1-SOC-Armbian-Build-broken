@@ -10,7 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REL="$SCRIPT_DIR/releases/1.0.0"
-CONFIG="$SCRIPT_DIR/config.env"
+CONFIG="${CONFIG:-$SCRIPT_DIR/config.env}"
 SRC="${1:-$REL/rootfs-v11.img}"
 OUT="${2:-$REL/rootfs-v14.img}"
 HOOK_LAYOUT="$SCRIPT_DIR/userpatches-chroot/25-rk3308bs-emmc-layout.sh"

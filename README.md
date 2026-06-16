@@ -71,14 +71,14 @@ Experimental **Armbian eMMC firmware** for the **RK3308BS S1-SOC** on the Artill
 
 This repository provides the **companion-board firmware and build pipeline**, not the main Klipper MCU firmware for the Manta/H36 stack.
 
-## Hardware overview (video)
+## Media (in this repository)
 
-Board overview and control-header pin identification (case light bar, RGB JST, +LED-):
+| Asset | File |
+|-------|------|
+| Hardware overview video (~45 MB) | [`Media/VID_20260615_141308204.mp4`](Media/VID_20260615_141308204.mp4) |
+| Boot logo source (BMP) | [`Media/boot-logo-artillery.bmp`](Media/boot-logo-artillery.bmp) |
 
-<video controls src="Media/VID_20260615_141308204.mp4" style="max-width: 640px;"></video>
-
-Download: [Media/VID_20260615_141308204.mp4](Media/VID_20260615_141308204.mp4) (~45 MB)
-
+Board overview and control-header pin identification (case light bar, RGB JST, +LED-).
 ## USB-C data cable (required for flash)
 
 MASKROM flashing and RKDevTool need a **data-capable** USB connection from your PC to the control board USB port.
@@ -129,6 +129,8 @@ Full wiring and terminal notes: [`docs/SERIAL_CONSOLE.md`](docs/SERIAL_CONSOLE.m
 ## Download and flash (companion image)
 
 1. From **GitHub Releases**, download `rk3308bs-1.0.0-emmc-fixed-v64.img`
+
+Release: [v0.64.1](https://github.com/xateesix/M1Pro-SOC-Armbian-Public/releases/tag/v0.64.1) — `rk3308bs-1.0.0-emmc-fixed-v64.img` and `build-artifacts-v0.64.1.tar.gz`.
 2. Flash with RKDevTool  ->  **Upgrade Firmware**
 3. **Change the default password** on first login
 

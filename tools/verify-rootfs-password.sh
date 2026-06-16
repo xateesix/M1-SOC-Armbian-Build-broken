@@ -2,13 +2,13 @@
 # Verify baked password hashes in a rootfs ext4 image.
 set -euo pipefail
 IMG="${1:?image path}"
-PW="${2:-ztfalxtspv}"
+PW="${2:-m1prox1}"
 
 TMP="$(mktemp)"
 debugfs -R "dump /etc/shadow $TMP" "$IMG" >/dev/null
 
 while IFS=: read -r user hash _; do
-	[[ "$user" == root || "$user" == xateesix ]] || continue
+	[[ "$user" == root || "$user" == m1prox1 ]] || continue
 	[[ -z "$hash" || "$hash" == "*" || "$hash" == "!"* ]] && { echo "$user: locked/empty"; continue; }
 	setting="${hash%${hash#*\$*\$*\$*}}"
 	# setting = everything through third $ inclusive
