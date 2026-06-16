@@ -2310,7 +2310,6 @@ tools/_urltest.txt
 tools/_verify-preflight.sh
 tools/_verify-remote.sh
 tools/_w.py
-tools/artillery-motd-branding.snippet
 tools/build-armbian-bootimg.sh
 tools/build-boot-v12.sh
 tools/build-boot-v13.sh
