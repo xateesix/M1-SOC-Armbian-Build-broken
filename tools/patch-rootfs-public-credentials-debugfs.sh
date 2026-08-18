@@ -193,14 +193,6 @@ while IFS= read -r f; do
   fi
 done < <(find "${STAGE}/home/${USER_NAME}" | sort)
 
-cat > "${STAGE}/wpa_supplicant.conf" <<'EOF'
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
-EOF
-df_write "${STAGE}/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf
-debugfs -w -R "set_inode_field /etc/wpa_supplicant/wpa_supplicant.conf mode 0100600" "$IMG" 2>/dev/null || true
-df_rm /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
-
 cat > "${STAGE}/system.cfg" <<'EOF'
 # RK3308BS /boot/system.cfg - optional hostname, timezone, WiFi (reboot to apply).
 check_interval=30

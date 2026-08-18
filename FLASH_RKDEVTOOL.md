@@ -1,5 +1,22 @@
 # RK3308BS  -  RKDevTool flash guide (Artillery M1 Pro S1-SOC)
 
+## Host role rule (mandatory)
+
+- Build host and flash host are different roles.
+- Never run `upgrade_tool` or `rkdeveloptool` on the build host.
+- Always upload firmware image from build host to flash host first, then flash on flash host.
+
+Linux flash-host example (SSH alias `flashpc`):
+
+```bash
+IMG="rk3308bs-1.0.0-v64-from-source-linux-emmc.img"
+SRC="/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build/releases/v64-from-source-linux/$IMG"
+
+rsync --partial --append-verify "$SRC" flashpc:~/rk3308bs-firmware/
+ssh flashpc "sha256sum ~/rk3308bs-firmware/$IMG"
+ssh flashpc "sudo upgrade_tool uf ~/rk3308bs-firmware/$IMG"
+```
+
 ## Install RKDevTool (not included in this repo)
 
 Use a **Windows PC**. Download RKDevTool and the Rockchip USB driver from vendor tool pages:
@@ -154,7 +171,7 @@ Flash finishes in under ~30 seconds on a multi-GB image  ->  only loader/IDB wri
 
 ## Serial
 
-After successful Armbian flash: **UART3 @ 1500000**, console **`ttyFIQ0`** (factory fiq-debugger  -  not ttyS3).
+After successful recovered v67 flash: **UART3 @ 1500000**, console **`ttyS3`** (older factory notes mention `ttyFIQ0`).
 
 Verify:
 

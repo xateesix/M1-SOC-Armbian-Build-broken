@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # v16 boot.img: stable kernel (no built-in DRM), serial console only.
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh"
-TOOLS="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/tools"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
+FAC="$PROJECT_ROOT/output/factory_fresh"
+TOOLS="$PROJECT_ROOT/output/tools"
 
 KERNEL="${1:-$REL/_Image-v16}"
 [[ -f "$KERNEL" ]] || { echo "Missing $KERNEL"; exit 1; }

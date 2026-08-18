@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Generate userpatches/firstboot.conf from config.env (Armbian non-interactive first boot).
+# WiFi itself is handled by the netplan/networkd path in the image hooks.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${SCRIPT_DIR}/config.env"
@@ -25,6 +26,7 @@ PRESET_USER_PASSWORD="$USER_PASSWORD"
 PRESET_DEFAULT_REALNAME="$USER_REALNAME"
 PRESET_LOCALE="$LOCALE"
 PRESET_TIMEZONE="$TIMEZONE"
+# Keep Armbian's wireless wizard off; the image hooks install netplan instead.
 PRESET_CONNECT_WIRELESS=0
 PRESET_NET_CHANGE_DEFAULTS=0
 EOF

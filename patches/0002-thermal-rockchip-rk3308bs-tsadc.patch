@@ -10,22 +10,8 @@ temperatures and hits soc-thermal critical trips on a cold SoC.
 
 Apply after Armbian rk3308-add-tsadc-driver.patch.
 ---
- Documentation/devicetree/bindings/thermal/rockchip-thermal.yaml |  1 +
- drivers/thermal/rockchip_thermal.c                              | 46 +++++++++++++++++++++++
- 2 files changed, 47 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.yaml b/Documentation/devicetree/bindings/thermal/rockchip-thermal.yaml
-index 111111111111..222222222222 100644
---- a/Documentation/devicetree/bindings/thermal/rockchip-thermal.yaml
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.yaml
-@@ -17,6 +17,7 @@ properties:
-       - rockchip,rk3228-tsadc
-       - rockchip,rk3288-tsadc
-       - rockchip,rk3308-tsadc
-+      - rockchip,rk3308bs-tsadc
-       - rockchip,rk3328-tsadc
-       - rockchip,rk3368-tsadc
-       - rockchip,rk3399-tsadc
+ drivers/thermal/rockchip_thermal.c | 46 +++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
 diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
 index 111111111111..222222222222 100644
 --- a/drivers/thermal/rockchip_thermal.c

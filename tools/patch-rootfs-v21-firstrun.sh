@@ -21,6 +21,16 @@ USER_NAME="${USER_NAME:-xateesix}"
 USER_REALNAME="${USER_REALNAME:-$USER_NAME}"
 LOCALE="${LOCALE:-en_US.UTF-8}"
 TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
+WIFI_SSID="${WIFI_SSID:-}"
+WIFI_PASSWORD="${WIFI_PASSWORD:-}"
+WIFI_COUNTRY="${WIFI_COUNTRY:-US}"
+
+yaml_escape() {
+	local value="$1"
+	value="${value//\\/\\\\}"
+	value="${value//\"/\\\"}"
+	printf '%s' "$value"
+}
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -57,6 +67,21 @@ ExecStart=-/sbin/agetty --autologin root --keep-baud 115200,1500000,9600 --nocle
 Type=idle
 EOF
 
+if [[ -n "$WIFI_SSID" && -n "$WIFI_PASSWORD" ]]; then
+	cat >"$WORKDIR/netplan-wlan0.yaml" <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    wlan0:
+      optional: true
+      dhcp4: true
+      access-points:
+        "$(yaml_escape "$WIFI_SSID")":
+          password: "$(yaml_escape "$WIFI_PASSWORD")"
+EOF
+fi
+
 cat >"$RELEASE" <<EOF
 RK3308BS_IMAGE=${IMAGE_TAG}
 RK3308BS_USER=${USER_NAME}
@@ -76,6 +101,7 @@ echo "rk3308bs-${IMAGE_TAG}" >"$HOSTNAME"
 for f in not_logged_in_yet serial-root-autologin.conf rk3308bs-release issue hostname; do
 	[[ -f "$WORKDIR/$f" ]] && sed -i 's/\r$//' "$WORKDIR/$f"
 done
+[[ -f "$WORKDIR/netplan-wlan0.yaml" ]] && sed -i 's/\r$//' "$WORKDIR/netplan-wlan0.yaml"
 
 CMD="$WORKDIR/debugfs.cmd"
 cat >"$CMD" <<EOF
@@ -91,6 +117,20 @@ write $HOSTNAME /etc/hostname
 rm /etc/systemd/system/serial-getty@ttyS3.service.d/baud1500000.conf
 mkdir /etc/systemd/system/serial-getty@ttyS3.service.d
 write $SERIAL_GETTY /etc/systemd/system/serial-getty@ttyS3.service.d/autologin.conf
+mkdir /etc/netplan
+EOF
+
+if [[ -f "$WORKDIR/netplan-wlan0.yaml" ]]; then
+cat >>"$CMD" <<EOF
+write $WORKDIR/netplan-wlan0.yaml /etc/netplan/01-rk3308bs-wlan0.yaml
+mkdir /etc/systemd/system/multi-user.target.wants
+symlink /lib/systemd/system/systemd-networkd.service /etc/systemd/system/multi-user.target.wants/systemd-networkd.service
+symlink /lib/systemd/system/systemd-resolved.service /etc/systemd/system/multi-user.target.wants/systemd-resolved.service
+symlink ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+EOF
+fi
+
+cat >>"$CMD" <<'EOF'
 unlink /etc/systemd/system/basic.target.wants/armbian-resize-filesystem.service
 cd /etc/systemd/system
 symlink /dev/null armbian-resize-filesystem.service

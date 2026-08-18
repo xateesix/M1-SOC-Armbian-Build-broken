@@ -145,13 +145,13 @@ Unit=rk3308bs-display-modules.service
 WantedBy=timers.target
 EOF
 
-WIFI_UNIT="$WORKDIR/rk3308bs-wifi-modules.service"
+WIFI_UNIT="$WORKDIR/rk3308bs-networking.service"
 cat >"$WIFI_UNIT" <<'EOF'
 [Unit]
-Description=RK3308BS load 8189fs WiFi modules
+Description=RK3308BS load 8189fs WiFi modules before networking
 DefaultDependencies=no
 After=local-fs.target basic.target
-Before=network-pre.target wpa-wlan0.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=oneshot

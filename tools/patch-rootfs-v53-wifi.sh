@@ -1,5 +1,5 @@
-﻿#!/usr/bin/env bash
-# Fix corrupt wifi-modules unit + single wpa supplicant (v53).
+#!/usr/bin/env bash
+# Fix corrupt wifi-modules unit + netplan networking (v53).
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="${1:-$SCRIPT_DIR/releases/1.0.0/rootfs-v52.img}"
@@ -12,10 +12,10 @@ mount -o loop "$OUT" "$MNT"
 
 tee "$MNT/etc/systemd/system/rk3308bs-wifi-modules.service" >/dev/null <<'EOF'
 [Unit]
-Description=RK3308BS load 8189fs WiFi modules
+Description=RK3308BS load 8189fs WiFi modules before networking
 DefaultDependencies=no
 After=local-fs.target basic.target
-Before=network-pre.target wpa-wlan0.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=oneshot
@@ -27,34 +27,31 @@ TimeoutStartSec=60
 WantedBy=multi-user.target
 EOF
 
-tee "$MNT/etc/systemd/system/wpa-wlan0.service" >/dev/null <<'EOF'
+tee "$MNT/etc/systemd/system/rk3308bs-networking.service" >/dev/null <<'EOF'
 [Unit]
-Description=WPA supplicant for wlan0 (RK3308BS)
+Description=Apply netplan for wlan0 (RK3308BS)
 DefaultDependencies=no
 After=local-fs.target rk3308bs-boot-config.service rk3308bs-wifi-modules.service
-Before=network-pre.target
+Before=network-pre.target systemd-networkd.service
 ConditionPathExists=/sys/class/net/wlan0
 
 [Service]
-Type=simple
-ExecStart=/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -i wlan0
-Restart=on-failure
-RestartSec=5
+Type=oneshot
+ExecStart=/usr/bin/netplan apply
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
 chmod 644 "$MNT/etc/systemd/system/rk3308bs-wifi-modules.service" \
-  "$MNT/etc/systemd/system/wpa-wlan0.service"
+  "$MNT/etc/systemd/system/rk3308bs-networking.service"
 
 mkdir -p "$MNT/etc/systemd/system/multi-user.target.wants"
 ln -sf ../rk3308bs-wifi-modules.service "$MNT/etc/systemd/system/multi-user.target.wants/rk3308bs-wifi-modules.service"
-ln -sf ../wpa-wlan0.service "$MNT/etc/systemd/system/multi-user.target.wants/wpa-wlan0.service"
+ln -sf ../rk3308bs-networking.service "$MNT/etc/systemd/system/multi-user.target.wants/rk3308bs-networking.service"
 
-chroot "$MNT" systemctl disable wpa_supplicant.service 2>/dev/null || true
-chroot "$MNT" systemctl mask wpa_supplicant.service 2>/dev/null || true
-chroot "$MNT" systemctl enable rk3308bs-wifi-modules.service wpa-wlan0.service 2>/dev/null || true
+chroot "$MNT" systemctl enable rk3308bs-wifi-modules.service rk3308bs-networking.service 2>/dev/null || true
 
 umount "$MNT"
 trap - EXIT

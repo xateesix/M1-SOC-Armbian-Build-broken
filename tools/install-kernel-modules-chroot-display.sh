@@ -184,10 +184,10 @@ EOF
 
 sudo_cmd tee "$MNT/etc/systemd/system/rk3308bs-wifi-modules.service" >/dev/null <<'EOF'
 [Unit]
-Description=RK3308BS load 8189fs WiFi modules
+Description=RK3308BS load 8189fs WiFi modules before networking
 DefaultDependencies=no
 After=local-fs.target basic.target
-Before=network-pre.target wpa-wlan0.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=oneshot

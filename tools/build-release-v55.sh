@@ -2,13 +2,18 @@
 # v55 release: growfix + expand + chroot display modules + v53 boot pack.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REL="$SCRIPT_DIR/releases/1.0.0"
-TOOLS="$SCRIPT_DIR/tools"
-BUILD_DIR="$SCRIPT_DIR/.build-v55"
-TMPDIR="$SCRIPT_DIR/.wsl-tmp"
+RELEASE_DIR="${RELEASE_DIR:-../pack/releases/1.0.0}"
+REL="${REL:-$SCRIPT_DIR/$RELEASE_DIR}"
+TOOLS="${TOOLS:-$SCRIPT_DIR/tools}"
+BUILD_DIR="${BUILD_DIR:-$SCRIPT_DIR/.build-v55}"
+TMPDIR="${TMPDIR:-$SCRIPT_DIR/.wsl-tmp}"
 export TMPDIR
 mkdir -p "$TMPDIR" "$BUILD_DIR"
-export RK3308BS_IMAGE_TAG="v55-expanded-display"
+export RK3308BS_IMAGE_TAG="${RK3308BS_IMAGE_TAG:-v55-expanded-display}"
+PACK_SUBDIR="${PACK_SUBDIR:-pack_input}"
+OUT_IMAGE="${OUT_IMAGE:-rk3308bs-emmc-fixed.img}"
+COPY_IMAGE="${COPY_IMAGE:-rk3308bs-emmc-fixed-copy.img}"
+WINDOWS_SCRIPT="${WINDOWS_SCRIPT:-$SCRIPT_DIR/windows-pack-update.ps1}"
 
 [[ -f "$REL/rootfs-v11.img" ]] || { echo "Missing rootfs-v11.img"; exit 1; }
 [[ -f "$REL/_Image-v22" ]] || { echo "Missing kernel Image"; exit 1; }
@@ -20,12 +25,12 @@ bash "$TOOLS/patch-rootfs-v55-expand.sh" "$BUILD_DIR/rootfs-growfix.img" "$BUILD
 bash "$TOOLS/install-kernel-modules-chroot-display.sh" "$BUILD_DIR/rootfs-expanded.img" "$BUILD_DIR/rootfs-v55.img"
 cp -f "$BUILD_DIR/rootfs-v55.img" "$REL/rootfs-v55.img"
 
-bash "$TOOLS/build-boot-v53.sh" "$REL/_Image-v22"
-bash "$TOOLS/stage-pack-v54.sh" "$REL/rootfs-v55.img"
-bash "$TOOLS/verify-pack-parameter.sh" "$REL/pack_input_v54/Image/parameter.txt"
-WIN_PACK="$(wslpath -w "$REL/pack_input_v54")"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$SCRIPT_DIR/windows-pack-update.ps1")" \
-  -PackInput "$WIN_PACK" -Output "rk3308bs-1.0.0-emmc-fixed-v55.img"
-cp -f "$REL/rk3308bs-1.0.0-emmc-fixed-v55.img" "$REL/rk3308bs-1.0.0-emmc-fixed.img"
-ls -la "$REL/rk3308bs-1.0.0-emmc-fixed-v55.img"
-echo "DONE: $REL/rk3308bs-1.0.0-emmc-fixed-v55.img"
+bash "$BOOT_SCRIPT" "$REL/_Image-v22"
+bash "$STAGE_SCRIPT" "$REL/rootfs-v55.img"
+bash "$VERIFY_SCRIPT" "$REL/$PACK_SUBDIR/Image/parameter.txt"
+WIN_PACK="$(wslpath -w "$REL/$PACK_SUBDIR")"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w "$WINDOWS_SCRIPT")" \
+  -PackInput "$WIN_PACK" -Output "$OUT_IMAGE"
+cp -f "$REL/$OUT_IMAGE" "$REL/$COPY_IMAGE"
+ls -la "$REL/$OUT_IMAGE"
+echo "DONE: $REL/$OUT_IMAGE"

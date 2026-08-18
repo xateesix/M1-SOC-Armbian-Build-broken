@@ -8,22 +8,24 @@ Build a **distributable, reproducible, lean Armbian OS** for the Artillery M1 Pr
 
 - **Fully supports onboard hardware**  -  LCD, touch, WiFi, serial, thermal, eMMC (everything needed on the printer)
 - **Targets Klipper**  -  minimal rootfs, reliable boot, display + network for a printer host (not a general desktop)
-- **Pre-configured before compile**  -  edit `config.env` once for username, password, WiFi, locale, timezone; baked into the image at build time (no first-boot wizard)
+- **Armbian-first by default**  -  normal first-boot user creation flow is the default. Optional pre-bake mode can inject username/password/WiFi from `config.env` when explicitly enabled.
 - **Reproducible**  -  scripted pipeline from Armbian source  ->  patched rootfs  ->  monolithic eMMC image; same inputs produce the same output
 - **Published publicly on GitHub**  -  `https://github.com/xateesix/M1-SOC-Armbian-Build.git` for others to fork, customize `config.env`, and build their own image
 
-**Design principles:** lean (no bloat), hardware-complete, script-driven, config-driven, documented flash path. Current work (v46 pipeline) is a stepping stone toward that release-quality image.
+**Design principles:** lean (no bloat), hardware-complete, script-driven, config-driven, documented flash path. Current recovered baseline is the v67 thermal-fix packaging line reconstructed from surviving logs and artifacts after a lost agent session.
+
+**Workspace assumption:** this environment is unstable; VS Code or the userspace may disappear at any time. Save durable state in tracked files and session artifacts, not only in live agent memory.
 
 ### Hardware support checklist (target state)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| eMMC boot/flash | Working | RKDevTool monolithic `.img`, 17 MB boot slot |
-| Serial console | Working | UART3 @ 1500000, **ttyFIQ0** |
-| 480x272 LCD | In progress | panel-dpi DTB + DRM modules in v46 |
-| Goodix GT911 touch | Target | I2C3  -  verify after v46 flash |
+| eMMC boot/flash | Working | RKDevTool monolithic `.img`, 17 MB boot slot, Linux packer path recovered |
+| Serial console | Reconfirm | Recovered v67 artifacts use UART3 @ 1500000 with **ttyS3** bootargs; older docs mention `ttyFIQ0` |
+| 480x272 LCD | In progress | Factory boot path retained; on-device reconfirmation still needed |
+| Goodix GT911 touch | Target | I2C3  -  verify on next v67 flash |
 | RTL8189FS WiFi | In progress | Module baked; credentials from `config.env` |
-| RK3308BS thermal | Working | `rk3308bs-tsadc` kernel patch + DTB |
+| RK3308BS thermal | Recovered fix | Kernel patch `0002-thermal-rockchip-rk3308bs-tsadc.patch`; verify on-device again |
 | Klipper host ready | Target | Lean Bookworm, SSH/serial login, WiFi, display |
 
 ### User customization (before compile)
@@ -40,12 +42,16 @@ Edit **`config.env`**  -  single file, no image editing:
 
 For public GitHub: ship `config.env.example` with placeholders; keep real `config.env` local (see roadmap in `.cursor/STATE.md`).
 
+Public exports must be sanitized: no usernames, passwords, Wi-Fi data, IPs, hostnames, serial logs, or proprietary firmware blobs.
+
 ## Workspace
 
 | | Path |
 |---|------|
 | **Windows** | `C:\Workspaces\Armbian-M1-SOC` |
 | **WSL** | `/mnt/c/Workspaces/Armbian-M1-SOC` |
+| **Recovered Linux workspace** | `/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build` |
+| **Linux flash host** | `flashpc` / `10.22.2.22` |
 | **Git remote** | `https://github.com/xateesix/M1-SOC-Armbian-Build.git` |
 
 **Deprecated (do not use):** `C:\Users\john.X86\Downloads\RKDevTool_Release_v2.86\...\Output\Armbian`
@@ -54,7 +60,7 @@ For public GitHub: ship `config.env.example` with placeholders; keep real `confi
 
 - Board: Artillery M1 Pro S1-SOC (RK3308BS)
 - Flash tool: RKDevTool v2.86  ->  tab **Upgrade Firmware** (monolithic `.img` only)
-- Serial: **UART3 @ 1500000**, console **`ttyFIQ0`** (fiq-debugger  -  same header as factory)
+- Serial: **UART3 @ 1500000**; recovered v67 artifacts currently use **`ttyS3`** (older factory notes mention `ttyFIQ0`)
 - LCD: 480x272 RGB panel-dpi
 - WiFi: RTL8189FS (`8189fs.ko`)
 
@@ -62,64 +68,66 @@ For public GitHub: ship `config.env.example` with placeholders; keep real `confi
 
 | Item | Value |
 |------|-------|
-| **Target version** | **v46** (`v46-systemcfg-chroot`) |
-| **Why v46** | v43 rootfs used `debugfs set_inode_field`  ->  ext4 inode corruption  ->  login loop |
-| **v44** | Never built  -  redirects to v46 |
-| **Flash image** | `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v46.img` |
-| **Alias** | `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed.img` (copy of latest) |
+| **Target version** | **v67** (recovered thermal-fix line) |
+| **Why v67** | Latest recovered eMMC artifact after the lost session; packaging completed on 2026-07-22 |
+| **Thermal basis** | `0002-thermal-rockchip-rk3308bs-tsadc.patch` + rebuilt Armbian image |
+| **Flash image** | `/home/xateesix/scratch/Projects/pack/releases/v67/rk3308bs-1.0.0-v67-emmc.img` |
+| **Staging dir** | `/home/xateesix/scratch/Projects/pack/releases/v67/pack_input/` |
 
 **Do not flash v43**  -  known `Authentication failure` / `bogus i_mode (644)`.
 
-## Where we left off (2026-06-13)
+## Recovered state after lost session (2026-08-17)
 
-1. v46 rebuilt with **ttyFIQ0** console (DTB + rootfs getty)
-2. Flash image ready: `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v46.img` (2026-06-13 10:54)
-3. **Next:** flash to board and verify serial, LCD, WiFi, login
+1. Later work continued beyond the old v46 handoff; surviving artifacts show v64, v65, v66, and **v67** builds.
+2. Latest recovered packaging success is logged in `output/smart-build/20260722-130656-2058017.summary.log`.
+3. v67 succeeded via **Phase A factory boot.img cmdline patch** (`console=ttyS3,1500000n8` + root PARTUUID) and a 17 MB boot partition.
+4. The full custom DTB/resource path hit a slot-size limit during recovery, so the final v67 artifact used the factory boot/resource path instead.
+5. User-reported last lost-session outcome: successful eMMC image testing of the thermal management fix.
+6. Linux flash host confirmed after recovery: **`flashpc` = `10.22.2.22`**.
+7. **Next:** flash-test v67 again and record serial, LCD, Goodix, WiFi, and thermal behavior in `.cursor/STATE.md`.
 
 ## Quick commands
 
-### Rebuild v46 only (rootfs + pack; reuses existing kernel Image)
+### Rebuild from source (current recovered path)
 
 ```bash
-cd /mnt/c/Workspaces/Armbian-M1-SOC
+cd /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build
 sudo -v
-bash tools/run-build-v46.sh
-# or pack-only if rootfs/boot already exist:
-bash tools/finish-pack-v46.sh
+RELEASE_TAG=v68-next RK3308BS_TSADC=1 bash tools/build-from-source-linux.sh
+# Re-pack an already staged release tag with Linux tools:
+bash tools/pack-firmware-linux.sh v67 /home/xateesix/scratch/Projects/pack
 ```
 
 ### Flash (Windows)
 
 1. MASKROM  ->  RKDevTool  ->  **Upgrade Firmware**
-2. Select `releases\1.0.0\rk3308bs-1.0.0-emmc-fixed-v46.img`
+2. Copy `/home/xateesix/scratch/Projects/pack/releases/v67/rk3308bs-1.0.0-v67-emmc.img` to the Windows flash host and select that file in RKDevTool
 3. Log must show `Gpt=1`, `Download rootfs`, `Download Firmware Success`
 
-### Verify on board (serial @ 1500000, ttyFIQ0)
+### Verify on board (serial @ 1500000, recovered v67 uses ttyS3)
 
 ```bash
 cat /etc/rk3308bs-release
 uname -r
 lsblk
 dmesg | grep -E 'mmc|drm|8189|tsadc'
-systemctl status serial-getty@ttyFIQ0.service
+cat /sys/class/thermal/thermal_zone0/temp
+systemctl status serial-getty@ttyS3.service
 ```
 
-## v46 fix
+## v67 packaging notes
 
-GPT uses factory `rootfs:grow` at `0x17200` (v45 explicit size caused unnamed partition + mount panic).
+Recovered v67 packaging keeps the factory-style `rootfs:grow` start at `0x17200`, expands boot to 17 MB, and patches the factory boot cmdline in place. This avoided the earlier GPT/mount problems and the later resource-slot overflow seen when trying to embed the larger custom DTB directly.
 
-## Pipeline map (v46)
+## Pipeline map (v67 recovered)
 
 ```
-rootfs-v11.img
-   ->  patch-rootfs-v46-mount.sh   (chroot: users, system.cfg, ttyFIQ0 getty)
-   ->  install-kernel-modules-debugfs-all.sh  (WiFi + DRM modules)
-   ->  rootfs-v46.img
-build-boot-v39.sh               (factory DTB + panel-dpi + ttyFIQ0 bootargs)
-   ->  _boot-v39.img
-stage-pack-v39.sh               (pack_input_v39/)
-windows-pack-update.ps1         (AFPTool + RKImageMaker)
-   ->  rk3308bs-1.0.0-emmc-fixed-v46.img
+build-from-source-linux.sh      (injects 0001 DTS + 0002 thermal patch into Armbian build)
+   ->  fresh Armbian image
+build-emmc-release.sh --pack-only
+   ->  rootfs.img + Phase A patched factory boot.img + pack_input/
+pack-firmware-linux.sh
+   ->  rk3308bs-1.0.0-v67-emmc.img
 ```
 
 ## Config (single source of truth)
@@ -133,20 +141,20 @@ Edit **`config.env`** before every build  -  this is how end users customize the
 | Locale / timezone | `LOCALE`, `TIMEZONE` |
 | Serial console | `SERIAL_GETTY`, `SERIAL_BAUD` |
 
-Values are baked in at compile/patch time. For public GitHub: use `config.env.example` with placeholders.
+Default behavior keeps standard Armbian first-boot setup. To pre-bake credentials/WiFi, build with `--preconfigure-credentials` (or `PRECONFIGURE_CREDENTIALS=1`) and supply values via `config.env`.
 
 ## If something breaks
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Login loop / `bogus i_mode` | Flashed v43 or partial update over grown eMMC | **Full flash v46** |
-| Silent serial | Wrong console (ttyS3) or wrong baud | Use **ttyFIQ0 @ 1500000** |
-| U-Boot `=>` / PXE | Truncated boot.img or bad header | Use `-emmc-fixed` (17 MB boot slot) |
-| `Invalid DTB hash` | resource.img RSCE hash stale | Rebuild boot-v39+ |
-| Thermal reboot loop | TSADC uncalibrated | v46 uses `rk3308bs-tsadc` in DTB |
+| Login loop / `bogus i_mode` | Flashed v43 or partial update over grown eMMC | **Do not use v43**; full flash recovered v67 |
+| Silent serial | Wrong console or wrong baud | Recovered v67 uses **ttyS3 @ 1500000**; confirm before changing scripts |
+| U-Boot `=>` / PXE | Truncated boot.img or bad header | Use monolithic v67 image with 17 MB boot slot |
+| DTB/resource packing failure | Custom DTB exceeds factory resource slot | Use recovered Phase A factory boot path or shrink DTB |
+| Thermal reboot loop | TSADC conversion mismatch | Rebuild with `0002-thermal-rockchip-rk3308bs-tsadc.patch` enabled |
 | Blank LCD | DRM modules missing | Re-run module install script |
-| Build can't find files | Old Downloads paths | Use scripts with `$SCRIPT_DIR` (v46 pipeline) |
-| `cp: pack_input/package-file` | Old stage-pack script | Use `stage-pack-v39.sh` (copies from `factory_fresh/03_partitions`) |
+| Build can't find files | Old Downloads paths | Use scripts with `$SCRIPT_DIR` and current workspace paths |
+| Missing monolithic pack output | Windows pack path drift or stale legacy tool path | Use `tools/pack-firmware-linux.sh` or verify `windows-pack-update.ps1` inputs |
 
 ## Key docs
 

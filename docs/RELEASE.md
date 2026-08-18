@@ -4,14 +4,14 @@
 
 | Asset | Description |
 |-------|-------------|
-| `rk3308bs-1.0.0-emmc-fixed-v64.img` | Ready-to-flash monolithic eMMC image |
+| `rk3308bs-1.0.0-emmc-fixed-v64.img` | Historical ready-to-flash monolithic eMMC image; recovered v67 is the current baseline in `RESUME_HERE.md` |
 
 | Account | Username | Password |
 |---------|----------|----------|
 | Normal user | `m1prox1` | `m1prox1` |
 | Root | `root` | `m1prox1` |
 
-WiFi is not pre-configured. Change passwords after first boot.
+WiFi is not pre-configured in the published image. Change passwords after first boot or pre-bake credentials only in private builds.
 
 ## Build artifacts tarball
 

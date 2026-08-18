@@ -37,9 +37,9 @@ ISSUE="$WORKDIR/issue"
 HOSTNAME="$WORKDIR/hostname"
 GROW_SH="$WORKDIR/rk3308bs-grow-rootfs.sh"
 GROW_UNIT="$WORKDIR/rk3308bs-grow-rootfs.service"
-WPA_CONF="$WORKDIR/wpa_supplicant-wlan0.conf"
-NETDEV="$WORKDIR/25-wlan0.network"
-WPA_UNIT="$WORKDIR/wpa-wlan0.service"
+NETPLAN_CONF="$WORKDIR/01-rk3308bs-wlan0.yaml"
+NETPLAN_UNIT="$WORKDIR/rk3308bs-networking.service"
+NETPLAN_TIMER="$WORKDIR/rk3308bs-networking.timer"
 WANTS_DROPIN="$WORKDIR/rk3308bs.conf"
 
 cat >"$SERIAL_GETTY" <<EOF
@@ -88,51 +88,42 @@ TimeoutStartSec=300
 WantedBy=multi-user.target
 EOF
 
-cat >"$WPA_CONF" <<EOF
-country=${WIFI_COUNTRY}
-ctrl_interface=/var/run/wpa_supplicant
-update_config=0
-
-network={
-	ssid="${WIFI_SSID}"
-	psk="${WIFI_PASSWORD}"
-	key_mgmt=WPA-PSK
-}
+cat >"$NETPLAN_CONF" <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    wlan0:
+      optional: true
+      dhcp4: true
+      access-points:
+        "${WIFI_SSID}":
+          password: "${WIFI_PASSWORD}"
 EOF
 
-cat >"$NETDEV" <<'EOF'
-[Match]
-Name=wlan0
-
-[Network]
-DHCP=yes
-EOF
-
-cat >"$WPA_UNIT" <<'EOF'
+cat >"$NETPLAN_UNIT" <<'EOF'
 [Unit]
-Description=WPA supplicant for wlan0 (RK3308BS)
+Description=Apply netplan for wlan0 (RK3308BS)
 DefaultDependencies=no
 After=local-fs.target rk3308bs-wifi-modules.service
 Before=network-pre.target systemd-networkd.service
 
 [Service]
-Type=simple
-ExecStart=/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -i wlan0
-Restart=on-failure
-RestartSec=3
+Type=oneshot
+ExecStart=/usr/bin/netplan apply
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-WPA_TIMER="$WORKDIR/wpa-wlan0.timer"
-cat >"$WPA_TIMER" <<'EOF'
+cat >"$NETPLAN_TIMER" <<'EOF'
 [Unit]
-Description=RK3308BS delayed WPA supplicant (after WiFi modules)
+Description=RK3308BS delayed netplan apply (after WiFi modules)
 
 [Timer]
 OnBootSec=25s
-Unit=wpa-wlan0.service
+Unit=rk3308bs-networking.service
 
 [Install]
 WantedBy=timers.target
@@ -164,8 +155,8 @@ EOF
 echo "rk3308bs-${IMAGE_TAG}" >"$HOSTNAME"
 
 for f in serial-root-autologin.conf rk3308bs-release issue hostname \
-	rk3308bs-grow-rootfs.sh rk3308bs-grow-rootfs.service wpa_supplicant-wlan0.conf \
-	25-wlan0.network wpa-wlan0.service wpa-wlan0.timer rk3308bs.conf; do
+rk3308bs-grow-rootfs.sh rk3308bs-grow-rootfs.service 01-rk3308bs-wlan0.yaml \
+rk3308bs-networking.service rk3308bs-networking.timer rk3308bs.conf; do
 	[[ -f "$WORKDIR/$f" ]] && sed -i 's/\r$//' "$WORKDIR/$f"
 done
 
@@ -185,12 +176,10 @@ write $SERIAL_GETTY /etc/systemd/system/serial-getty@ttyS3.service.d/autologin.c
 mkdir /usr/local/sbin
 write $GROW_SH /usr/local/sbin/rk3308bs-grow-rootfs.sh
 write $GROW_UNIT /etc/systemd/system/rk3308bs-grow-rootfs.service
-mkdir /etc/wpa_supplicant
-write $WPA_CONF /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
-mkdir /etc/systemd/network
-write $NETDEV /etc/systemd/network/25-wlan0.network
-write $WPA_UNIT /etc/systemd/system/wpa-wlan0.service
-write $WPA_TIMER /etc/systemd/system/wpa-wlan0.timer
+mkdir /etc/netplan
+write $NETPLAN_CONF /etc/netplan/01-rk3308bs-wlan0.yaml
+write $NETPLAN_UNIT /etc/systemd/system/rk3308bs-networking.service
+write $NETPLAN_TIMER /etc/systemd/system/rk3308bs-networking.timer
 mkdir /etc/systemd/system/multi-user.target.d
 write $WANTS_DROPIN /etc/systemd/system/multi-user.target.d/rk3308bs.conf
 rm /etc/profile.d/armbian-check-first-login.sh
@@ -203,7 +192,7 @@ symlink /dev/null armbian-firstrun.service
 symlink /dev/null armbian-firstlogin.service
 symlink /dev/null armbian-resize-filesystem.service
 mkdir /etc/systemd/system/timers.target.wants
-ln /etc/systemd/system/wpa-wlan0.timer /etc/systemd/system/timers.target.wants/wpa-wlan0.timer
+ln /etc/systemd/system/rk3308bs-networking.timer /etc/systemd/system/timers.target.wants/rk3308bs-networking.timer
 quit
 EOF
 

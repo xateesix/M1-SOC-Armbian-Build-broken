@@ -3,7 +3,7 @@
 # Enhanced Armbian Build for RK3308BS EVB with WiFi & Root Password Config
 #
 # This script:
-#   1. Manages a persistent ~/armbian-build on your Ubuntu server (or local)
+#   1. Manages a persistent $PROJECT_ROOT-build on your Ubuntu server (or local)
 #   2. Pre-configures WiFi credentials (SSID + password)
 #   3. Sets root password automatically
 #   4. Supports GitHub sync for collaborative development
@@ -64,6 +64,12 @@ done
 
 _install_userpatches() {
     local BUILD_PATH="$1"
+    local yaml_ssid yaml_password
+
+    yaml_ssid="${WIFI_SSID//\\/\\\\}"
+    yaml_ssid="${yaml_ssid//\"/\\\"}"
+    yaml_password="${WIFI_PASSWORD//\\/\\\\}"
+    yaml_password="${yaml_password//\"/\\\"}"
 
     mkdir -p "$BUILD_PATH/config/boards" "$BUILD_PATH/userpatches/overlay-user"
     cp "$SCRIPT_DIR/rk3308bs-evb.conf" "$BUILD_PATH/config/boards/rk3308bs-evb.conf"
@@ -77,19 +83,20 @@ _install_userpatches() {
         sed -i 's/\r$//' "$BUILD_PATH/userpatches/kernel/rockchip64-current/0002-rk3308bs-tsadc.patch"
     fi
 
-    mkdir -p "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant"
-    cat > "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf" <<EOF
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
-
-network={
-    ssid="$WIFI_SSID"
-    psk="$WIFI_PASSWORD"
-    key_mgmt=WPA-PSK
-    priority=100
-}
+    mkdir -p "$BUILD_PATH/userpatches/overlay-user/etc/netplan"
+    cat > "$BUILD_PATH/userpatches/overlay-user/etc/netplan/01-rk3308bs-wlan0.yaml" <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    wlan0:
+      optional: true
+      dhcp4: true
+      access-points:
+        "$yaml_ssid":
+          password: "$yaml_password"
 EOF
-    chmod 600 "$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf"
+    chmod 600 "$BUILD_PATH/userpatches/overlay-user/etc/netplan/01-rk3308bs-wlan0.yaml"
 
     mkdir -p "$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d"
     cat > "$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password" <<EOF
@@ -102,6 +109,21 @@ EOF
     if [ -d "$SCRIPT_DIR/overlay-user" ]; then
         cp -a "$SCRIPT_DIR/overlay-user/." "$BUILD_PATH/userpatches/overlay-user/"
     fi
+    cat > "$BUILD_PATH/userpatches/firstboot.conf" <<EOF
+PRESET_ROOT_PASSWORD=$ROOT_PASSWORD
+PRESET_USER_NAME=${USER_NAME:-m1prox1}
+PRESET_USER_PASSWORD=${USER_PASSWORD:-$ROOT_PASSWORD}
+PRESET_DEFAULT_REALNAME=${USER_REALNAME:-${USER_NAME:-m1prox1}}
+PRESET_LOCALE=${LOCALE:-en_US.UTF-8}
+PRESET_TIMEZONE=${TIMEZONE:-America/Los_Angeles}
+PRESET_NET_CHANGE_DEFAULTS=1
+PRESET_NET_ETHERNET_ENABLED=0
+PRESET_NET_WIFI_ENABLED=1
+PRESET_NET_WIFI_SSID=$WIFI_SSID
+PRESET_NET_WIFI_KEY=$WIFI_PASSWORD
+PRESET_NET_WIFI_COUNTRYCODE=US
+PRESET_CONNECT_WIRELESS=0
+EOF
     if [ -f "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" ]; then
         cp "$SCRIPT_DIR/userpatches-chroot/20-rk3308bs-hardware.sh" \
             "$BUILD_PATH/config/20-rk3308bs-hardware.sh"
@@ -139,6 +161,12 @@ _build_remote() {
     PLINK="/mnt/c/Program Files/PuTTY/plink.exe"
     PSCP="/mnt/c/Program Files/PuTTY/pscp.exe"
     REMOTE_PASS="${SSH_PASSWORD:-${SUDO_PASSWORD:-${ROOT_PASSWORD:-}}}"
+    local yaml_ssid yaml_password
+
+    yaml_ssid="${WIFI_SSID//\\/\\\\}"
+    yaml_ssid="${yaml_ssid//\"/\\\"}"
+    yaml_password="${WIFI_PASSWORD//\\/\\\\}"
+    yaml_password="${yaml_password//\"/\\\"}"
     USE_PLINK=0
     if [ -n "$REMOTE_PASS" ] && [ -f "$PLINK" ]; then
         USE_PLINK=1
@@ -249,22 +277,22 @@ cp "\$BUILD_PATH/_kernel.patch" "\$BUILD_PATH/userpatches/kernel/rockchip64-curr
 sed -i 's/\r\$//' "\$BUILD_PATH/userpatches/kernel/rockchip64-current/0001-add-rk3308bs-evb.patch"
 
 # Create WiFi overlay
-mkdir -p "\$BUILD_PATH/userpatches/overlay-user/etc/NetworkManager/conf.d"
-mkdir -p "\$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant"
+mkdir -p "\$BUILD_PATH/userpatches/overlay-user/etc/netplan"
 
-cat > "\$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf" <<'WIFIF'
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
+cat > "\$BUILD_PATH/userpatches/overlay-user/etc/netplan/01-rk3308bs-wlan0.yaml" <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+   wlan0:
+     optional: true
+     dhcp4: true
+     access-points:
+       "$yaml_ssid":
+         password: "$yaml_password"
+EOF
 
-network={
-    ssid="\$WIFI_SSID"
-    psk="\$WIFI_PASSWORD"
-    key_mgmt=WPA-PSK
-    priority=100
-}
-WIFIF
-
-chmod 600 "\$BUILD_PATH/userpatches/overlay-user/etc/wpa_supplicant/wpa_supplicant.conf"
+chmod 600 "\$BUILD_PATH/userpatches/overlay-user/etc/netplan/01-rk3308bs-wlan0.yaml"
 
 # Create root password setup script (runs in chroot)
 mkdir -p "\$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d"
@@ -279,19 +307,7 @@ PASSWDF
 sed -i "s|\\\$ROOT_PASSWORD|$ROOT_PASSWORD|g" "\$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password"
 chmod +x "\$BUILD_PATH/userpatches/chroot-services-rk3308bs-evb.d/10-set-root-password"
 
-# Enable WiFi service
-mkdir -p "\$BUILD_PATH/userpatches/overlay-user/etc/systemd/system-sleep"
-cat > "\$BUILD_PATH/userpatches/overlay-user/etc/systemd/system-sleep/99-wifi-restart" <<'WWIF'
-#!/bin/bash
-# Auto-reconnect WiFi after sleep
-case \$1 in
-    post)
-        systemctl restart wpa_supplicant
-        ;;
-esac
-WWIF
-
-chmod +x "\$BUILD_PATH/userpatches/overlay-user/etc/systemd/system-sleep/99-wifi-restart"
+# Netplan + networkd handles WiFi reconnects; no custom sleep hook needed.
 
 # Serial getty @ 1500000 (overlay from repo if present)
 if [ -d "\$BUILD_PATH/_overlay-user" ]; then

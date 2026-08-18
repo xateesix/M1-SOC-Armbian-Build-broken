@@ -1,9 +1,9 @@
 #!/bin/bash
-# Sync wpa_supplicant from /boot/system.cfg (edit WiFi on PC without rebuilding image).
+# Sync netplan from /boot/system.cfg (edit WiFi on PC without rebuilding image).
 set -euo pipefail
 
 cfg_file="/boot/system.cfg"
-wpa_conf="/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
+netplan_conf="/etc/netplan/01-rk3308bs-wlan0.yaml"
 log_file="/boot/scripts/wifi.log"
 
 [[ -f "$cfg_file" ]] || exit 0
@@ -20,24 +20,31 @@ if [[ -z "${WIFI_SSID:-}" || -z "${WIFI_PASSWD:-}" ]]; then
 	exit 0
 fi
 
-country="${WIFI_COUNTRY:-US}"
+yaml_escape() {
+	local value="$1"
+	value="${value//\\/\\\\}"
+	value="${value//\"/\\\"}"
+	printf '%s' "$value"
+}
+
 tmp="$(mktemp)"
 cat >"$tmp" <<EOF
-country=${country}
-ctrl_interface=/var/run/wpa_supplicant
-update_config=0
-
-network={
-	ssid="${WIFI_SSID}"
-	psk="${WIFI_PASSWD}"
-	key_mgmt=WPA-PSK
-}
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    "${wlan}":
+      optional: true
+      dhcp4: true
+      access-points:
+        "$(yaml_escape "$WIFI_SSID")":
+          password: "$(yaml_escape "$WIFI_PASSWD")"
 EOF
 
-if [[ ! -f "$wpa_conf" ]] || ! cmp -s "$tmp" "$wpa_conf"; then
-	cp "$tmp" "$wpa_conf"
-	chmod 600 "$wpa_conf"
-	echo "$(date) ===> Updated $wpa_conf from system.cfg (SSID=${WIFI_SSID})" >>"$log_file"
-	systemctl try-restart wpa-wlan0.service 2>/dev/null || true
+if [[ ! -f "$netplan_conf" ]] || ! cmp -s "$tmp" "$netplan_conf"; then
+	cp "$tmp" "$netplan_conf"
+	chmod 600 "$netplan_conf"
+	echo "$(date) ===> Updated $netplan_conf from system.cfg (SSID=${WIFI_SSID})" >>"$log_file"
+	netplan apply 2>/dev/null || systemctl restart systemd-networkd.service 2>/dev/null || true
 fi
 rm -f "$tmp"

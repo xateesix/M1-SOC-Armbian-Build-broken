@@ -78,6 +78,8 @@ This repository provides the **companion-board firmware and build pipeline**, no
 | Hardware overview video (~45 MB) | [`Media/VID_20260615_141308204.mp4`](Media/VID_20260615_141308204.mp4) |
 | Boot logo source (BMP) | [`Media/boot-logo-artillery.bmp`](Media/boot-logo-artillery.bmp) |
 
+The custom boot logo is compiled into boot assembly by `tools/build-armbian-bootimg.sh`.
+
 Board overview and control-header pin identification (case light bar, RGB JST, +LED-).
 ## USB-C data cable (required for flash)
 
@@ -120,13 +122,15 @@ A **USB to TTL serial adapter** lets you see boot logs and log in when WiFi or t
 | **Level** | Set adapter jumper to **3.3V** (RK3308 UART is 3.3 V TTL) |
 | **Wiring** | GND  ->  GND, adapter TXD  ->  board RX, adapter RXD  ->  board TX (UART3 header) |
 | **Baud** | **1500000** |
-| **Console** | **`ttyFIQ0`** on the running system |
+| **Console** | **`ttyS3`** on recovered v67 artifacts (older factory notes mention `ttyFIQ0`) |
 
 Use PuTTY, Tera Term, or `picocom` at **1500000 8N1**. FTDI VCP drivers: [ftdichip.com](https://ftdichip.com/drivers/vcp-drivers/).
 
 Full wiring and terminal notes: [`docs/SERIAL_CONSOLE.md`](docs/SERIAL_CONSOLE.md).
 
 ## Download and flash (companion image)
+
+Host-role rule: if build and flash are on different machines, upload the image to the flashing machine first and run flash there. Do not run `upgrade_tool` or `rkdeveloptool` on the build machine.
 
 1. From **GitHub Releases**, download `rk3308bs-1.0.0-emmc-fixed-v64.img`
 
@@ -139,7 +143,7 @@ Release: [v0.64.1](https://github.com/xateesix/M1Pro-SOC-Armbian-Public/releases
 | Normal user | `m1prox1` | `m1prox1` |
 | Root | `root` | `m1prox1` |
 
-WiFi is **not** configured on the published image.
+WiFi is **not** configured on the published image; build-time preconfigure is optional.
 
 Release assets: [`docs/RELEASE.md`](docs/RELEASE.md)
 
@@ -193,7 +197,7 @@ Output: `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v64.img`
 |---------|--------|
 | S1-SOC companion image (boot, display, serial, WiFi base) | Working / WIP |
 | 480x272 display + boot logo | Working |
-| Serial `ttyFIQ0` @ 1500000 | Working |
+| Serial `ttyS3` @ 1500000 | Working (older factory notes mention `ttyFIQ0`) |
 | WiFi (RTL8189FS) | On-device or custom rebuild |
 | **KlipperScreen** (companion role) | Target  -  integration WIP |
 | **Crowsnest** (companion role) | Target  -  integration WIP |
@@ -203,8 +207,10 @@ Output: `releases/1.0.0/rk3308bs-1.0.0-emmc-fixed-v64.img`
 | RGB pebbles (WS2812) | Not supported |
 | Factory Makerbase UI | Not included |
 
-GPIO map: [`docs/GPIO_AND_HARDWARE.md`](docs/GPIO_AND_HARDWARE.md)  
+GPIO map: [`docs/GPIO_AND_HARDWARE.md`](docs/GPIO_AND_HARDWARE.md)
 Boot logo: [`docs/BOOT_LOGO.md`](docs/BOOT_LOGO.md)
+
+The image build now stages KIAUH, Klipper, Moonraker, KlipperScreen, and Crowsnest source trees during rootfs customization.
 
 ## Build pipeline
 

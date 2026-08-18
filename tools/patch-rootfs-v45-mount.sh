@@ -136,41 +136,33 @@ EOF
 run_root cp "$SYSTEM_CFG" "$MNT/boot/system.cfg"
 run_root chmod 644 "$MNT/boot/system.cfg"
 
-# wpa_supplicant (also synced from system.cfg on boot via rk3308bs_init)
-run_root mkdir -p "$MNT/etc/wpa_supplicant"
-run_root tee "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf" >/dev/null <<EOF
-country=${WIFI_COUNTRY}
-ctrl_interface=/var/run/wpa_supplicant
-update_config=0
-
-network={
-	ssid="${WIFI_SSID:-}"
-	psk="${WIFI_PASSWORD:-}"
-	key_mgmt=WPA-PSK
-}
+# netplan (also synced from system.cfg on boot via rk3308bs_init)
+run_root mkdir -p "$MNT/etc/netplan"
+run_root tee "$MNT/etc/netplan/01-rk3308bs-wlan0.yaml" >/dev/null <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    wlan0:
+      optional: true
+      dhcp4: true
+      access-points:
+        "${WIFI_SSID:-}":
+          password: "${WIFI_PASSWORD:-}"
 EOF
-run_root chmod 600 "$MNT/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"
+run_root chmod 600 "$MNT/etc/netplan/01-rk3308bs-wlan0.yaml"
 
-run_root tee "$MNT/etc/systemd/network/25-wlan0.network" >/dev/null <<'EOF'
-[Match]
-Name=wlan0
-
-[Network]
-DHCP=yes
-EOF
-
-run_root tee "$MNT/etc/systemd/system/wpa-wlan0.service" >/dev/null <<'EOF'
+run_root tee "$MNT/etc/systemd/system/rk3308bs-networking.service" >/dev/null <<'EOF'
 [Unit]
-Description=WPA supplicant for wlan0 (RK3308BS)
+Description=Apply netplan for wlan0 (RK3308BS)
 DefaultDependencies=no
 After=local-fs.target rk3308bs-boot-config.service rk3308bs-wifi-modules.service
 Before=network-pre.target systemd-networkd.service
 
 [Service]
-Type=simple
-ExecStart=/sbin/wpa_supplicant -c /etc/wpa_supplicant/wpa_supplicant-wlan0.conf -i wlan0
-Restart=on-failure
-RestartSec=3
+Type=oneshot
+ExecStart=/usr/bin/netplan apply
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
@@ -181,7 +173,7 @@ run_root tee "$MNT/etc/systemd/system/rk3308bs-boot-config.service" >/dev/null <
 Description=RK3308BS apply /boot/system.cfg (hostname, TZ, WiFi)
 DefaultDependencies=no
 After=local-fs.target
-Before=network-pre.target wpa-wlan0.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=oneshot
@@ -253,7 +245,7 @@ run_root ln -sf /dev/null "$MNT/etc/systemd/system/armbian-firstlogin.service"
 
 run_root chroot "$MNT" systemctl enable armbian-resize-filesystem.service 2>/dev/null || true
 run_root chroot "$MNT" systemctl enable rk3308bs-boot-config.service 2>/dev/null || true
-run_root chroot "$MNT" systemctl enable wpa-wlan0.service 2>/dev/null || true
+run_root chroot "$MNT" systemctl enable rk3308bs-networking.service 2>/dev/null || true
 
 run_root chmod 644 "$MNT/etc/passwd" "$MNT/etc/group"
 run_root chmod 640 "$MNT/etc/shadow" "$MNT/etc/gshadow"

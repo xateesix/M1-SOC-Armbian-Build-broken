@@ -29,8 +29,8 @@ The new build system addresses your concerns:
 - Can be changed later if needed:
   ```bash
   ssh root@board
-  nano /etc/wpa_supplicant/wpa_supplicant.conf
-  systemctl restart wpa_supplicant
+  nano /etc/netplan/01-rk3308bs-wlan0.yaml
+  netplan apply
   ```
 
 ### ✅ Problem 3: "Force a root password on first run?"
@@ -187,8 +187,8 @@ Edit the overlay (or on device after boot):
 **On device:**
 ```bash
 ssh root@BOARD_IP
-nano /etc/wpa_supplicant/wpa_supplicant.conf
-systemctl restart wpa_supplicant
+nano /etc/netplan/01-rk3308bs-wlan0.yaml
+netplan apply
 ```
 
 **In image (before flash):**
@@ -272,4 +272,3 @@ Build status visible in log:
 ```bash
 tail -f build-remote.log
 ```
-

@@ -59,7 +59,7 @@
 		 * normal serial (this stdout) and USB OTG mode.
 		 */
 		stdout-path = "serial3:1500000n8";
-		bootargs = "earlycon=uart8250,mmio32,0xff0d0000 console=ttyS3,1500000n8 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait";
+		bootargs = "earlycon=uart8250,mmio32,0xff0d0000 console=ttyS3,1500000n8 console=tty1 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait";
 	};
 
 	memory@0 {
@@ -243,7 +243,43 @@
 
 		port {
 			panel_in_rgb: endpoint {
-				remote-endpoint = <&vop_out_rgb>;
+				remote-endpoint = <&rgb_out_panel>;
+			};
+		};
+	};
+
+	/*
+	 * Internal RGB/LCDC output bridge (rockchip,rk3308-rgb).
+	 * The active rk3308.dtsi does not define an `rgb` label, so this node
+	 * must be declared inline for vop -> rgb -> panel routing.
+	 */
+	rgb: rgb {
+		compatible = "rockchip,rk3308-rgb";
+		status = "okay";
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcdc_ctl>, <&lcdc_rgb888_m0>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				rgb_in_vop: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&vop_out_rgb>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				rgb_out_panel: endpoint {
+					remote-endpoint = <&panel_in_rgb>;
+				};
 			};
 		};
 	};
@@ -363,11 +399,7 @@
 
 /*
  * ── I2C3: Goodix GT911 capacitive touch (remote ribbon cable) ──────────
- * IRQ: GPIO0_B0 (edge-rising, active-high)
- * RST: GPIO0_A7 (active-low)
- * Touch area mapped to match the 480×272 panel size.
- * Note: the OEM firmware configures the GT911 for 800×480; you may need to
- * reflash the GT911 firmware config to match 480×272 if coordinates are off.
+ * Keep GPIO semantics aligned with the factory tree to avoid probe issues.
  */
 &i2c3 {
 	status = "okay";
@@ -377,10 +409,13 @@
 		reg = <0x5d>;
 		interrupt-parent = <&gpio0>;
 		interrupts = <RK_PB0 IRQ_TYPE_EDGE_RISING>;
-		irq-gpios   = <&gpio0 RK_PB0 GPIO_ACTIVE_HIGH>;
+		irq-gpios   = <&gpio0 RK_PB0 4>;
 		reset-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
-		touchscreen-size-x = <480>;
-		touchscreen-size-y = <272>;
+		touchscreen-size-x = <800>;
+		touchscreen-size-y = <480>;
+		max-x = <800>;
+		max-y = <480>;
+		tp-size = <109>;
 		status = "okay";
 	};
 };
@@ -415,20 +450,18 @@
 	status = "okay";
 };
 
-/* ── Display: VOP → RGB panel (kernel 6.18: no separate rgb bridge node) ─ */
+/* ── Display: VOP -> RGB bridge -> panel ────────────────────────────────── */
 &vop {
 	status = "okay";
-	pinctrl-names = "default";
-	pinctrl-0 = <&lcdc_ctl>, <&lcdc_rgb888_m0>;
+};
 
-	vop_out: port {
-		#address-cells = <1>;
-		#size-cells = <0>;
+&vop_out {
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-		vop_out_rgb: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&panel_in_rgb>;
-		};
+	vop_out_rgb: endpoint@0 {
+		reg = <0>;
+		remote-endpoint = <&rgb_in_vop>;
 	};
 };
 
@@ -489,9 +522,62 @@
 
 /* ── Thermal shutdown / throttle ─────────────────────────────────────── */
 &tsadc {
+	compatible = "rockchip,rk3308bs-tsadc";
+	rockchip,hw-tshut-temp   = <120000>;
 	rockchip,hw-tshut-mode     = <0>;	/* mode 0 = CRU reset */
 	rockchip,hw-tshut-polarity = <1>;	/* active-high */
 	status = "okay";
+};
+
+/ {
+	rockchip-system-monitor {
+		compatible = "rockchip,system-monitor";
+		rockchip,thermal-zone = "soc-thermal";
+		rockchip,polling-delay = <200>;
+	};
+
+	thermal-zones {
+		soc-thermal {
+			polling-delay-passive = <20>;
+			polling-delay = <1000>;
+			sustainable-power = <360>;
+			thermal-sensors = <&tsadc 0>;
+
+			trips {
+				soc_passive: trip-point@0 {
+					temperature = <70000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				soc_alert: trip-point@1 {
+					temperature = <85000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				soc_crit: soc-crit {
+					temperature = <115000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+					trip = <&soc_alert>;
+					cooling-device = <&cpu0 0xffffffff 0xffffffff>;
+					contribution = <1000>;
+				};
+			};
+		};
+
+		gpu-thermal {
+			polling-delay-passive = <100>;
+			polling-delay = <1000>;
+			thermal-sensors = <&tsadc 1>;
+		};
+	};
 };
 
 /* ── SAR ADC (ADC key buttons on channel 1) ──────────────────────────── */

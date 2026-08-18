@@ -11,6 +11,13 @@ TIMEZONE="${TIMEZONE:-America/Los_Angeles}"
 WIFI_SSID="${WIFI_SSID:-}"
 WIFI_PASSWORD="${WIFI_PASSWORD:-}"
 
+yaml_escape() {
+	local value="$1"
+	value="${value//\\/\\\\}"
+	value="${value//\"/\\\"}"
+	printf '%s' "$value"
+}
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "[rk3308bs] Pre-configuring root password ..."
@@ -40,19 +47,21 @@ usermod -aG sudo,adm,dialout,cdrom,audio,video,plugdev,games,users,input,render,
 
 if [[ -n "$WIFI_SSID" && -n "$WIFI_PASSWORD" ]]; then
 	echo "[rk3308bs] WiFi ${WIFI_SSID} ..."
-	mkdir -p /etc/wpa_supplicant
-	cat >/etc/wpa_supplicant/wpa_supplicant.conf <<EOF
-ctrl_interface=/var/run/wpa_supplicant
-update_config=1
-
-network={
-    ssid="${WIFI_SSID}"
-    psk="${WIFI_PASSWORD}"
-    key_mgmt=WPA-PSK
-    priority=100
-}
+	mkdir -p /etc/netplan
+	cat >/etc/netplan/01-rk3308bs-wlan0.yaml <<EOF
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    wlan0:
+      optional: true
+      dhcp4: true
+      access-points:
+        "$(yaml_escape "$WIFI_SSID")":
+          password: "$(yaml_escape "$WIFI_PASSWORD")"
 EOF
-	chmod 600 /etc/wpa_supplicant/wpa_supplicant.conf
+	chmod 600 /etc/netplan/01-rk3308bs-wlan0.yaml
+	ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 fi
 
 rm -f /root/.not_logged_in_yet

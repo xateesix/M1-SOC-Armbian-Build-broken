@@ -35,7 +35,7 @@ Install in WSL: `lz4`, `python3`, `device-tree-compiler`, `e2fsprogs`.
 Produces `../Armbian-unofficial_*_Rk3308bs-evb_bookworm_*.img`.
 
 **Important:** After DTS changes, rebuild Armbian so the image contains an
-updated `rk3308bs-evb-amic-v11.dtb` (console `ttyFIQ0` via fiq-debugger).
+updated `rk3308bs-evb-amic-v11.dtb` (recovered v67 uses `ttyS3`; older factory notes mention `ttyFIQ0`).
 
 ### 2. Pack monolithic eMMC update (Phase B default)
 
@@ -60,7 +60,7 @@ Options:
 
 RKDevTool  ->  **Upgrade Firmware**  ->  `rk3308bs-1.0.0-emmc.img`
 
-Serial: **UART3 @ 1500000**, console **`ttyFIQ0`**.
+Serial: **UART3 @ 1500000**, console **`ttyS3`** on recovered v67 artifacts (older factory notes mention `ttyFIQ0`).
 
 ### 4. Verify
 
@@ -82,10 +82,11 @@ sudo ./RK3308_FACTORY_AUDIT.SH
 ## WiFi (Phase B)
 
 No factory `8189fs.ko` injection. WiFi comes from the **Armbian kernel**
-(`rtw88` / in-tree driver) matching rootfs `/lib/modules/6.18.x-*`.
+(`rtl8189fs` / `8189fs.ko`) plus `firmware-realtek` matching rootfs
+`/lib/modules/6.18.x-*`.
 
-If WiFi fails after first boot, enable the RTL8189CS driver in the Armbian
-kernel config and rebuild (`./build-enhanced.sh` or `./compile.sh kernel`).
+If WiFi fails after first boot, verify the RTL8189CS driver is enabled in the
+Armbian kernel config and rebuild (`./build-enhanced.sh` or `./compile.sh kernel`).
 
 ## Legacy Phase A
 

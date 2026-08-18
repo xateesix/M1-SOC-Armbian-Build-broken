@@ -23,7 +23,7 @@ Do **not** connect adapter **VCC** to the board unless you intentionally need to
 |---------|--------|
 | Header | UART3 on the S1-SOC control board |
 | Baud rate | **1500000** (not 115200) |
-| Linux console | **`ttyFIQ0`** (fiq-debugger) |
+| Linux console | **`ttyS3`** on recovered v67 artifacts (older factory notes mention `ttyFIQ0`) |
 | Data | 8N1, no flow control |
 
 ## PC terminal

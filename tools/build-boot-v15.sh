@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # v15 boot.img: factory DTB + rk3308bs-tsadc + v15 kernel (built-in DRM + fbcon on LCD).
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh"
-TOOLS="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/tools"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
+FAC="$PROJECT_ROOT/output/factory_fresh"
+TOOLS="$PROJECT_ROOT/output/tools"
 
 KERNEL="${1:-$REL/_Image-v15}"
 if [ ! -f "$KERNEL" ]; then

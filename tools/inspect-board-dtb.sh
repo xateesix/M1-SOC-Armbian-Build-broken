@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
 F="$REL/_board-kernel.dtb"
 echo "=== tsadc ==="
 fdtget -l "$F" /tsadc 2>&1 || true

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Apply hostname and timezone from /boot/system.cfg (BTT-style, networkd/wpa stack).
+# Apply hostname and timezone from /boot/system.cfg (BTT-style, netplan/networkd stack).
 set -euo pipefail
 
 SYSTEM_CFG_PATH="/boot/system.cfg"

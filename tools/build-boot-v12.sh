@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh"
-TOOLS="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/tools"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
+FAC="$PROJECT_ROOT/output/factory_fresh"
+TOOLS="$PROJECT_ROOT/output/tools"
 
 python3 "$TOOLS/patch-dtb-bootargs.py" \
   --from-factory-resource "$FAC/04_boot_unpacked/resource.img" \

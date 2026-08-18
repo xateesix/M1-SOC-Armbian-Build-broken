@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Apply serial console getty inside a mounted rootfs (called from patch-rootfs-*-mount.sh).
-# RK3308BS: UART3 header @ 1500000  -  console device is ttyFIQ0 (factory fiq-debugger).
+# RK3308BS: UART3 header @ 1500000  -  recovered v67 console device is ttyS3; older factory images used ttyFIQ0.
 set -euo pipefail
 
 MNT="${1:?mount point}"
 USER_NAME="${2:?username}"
-SERIAL_GETTY="${3:-ttyFIQ0}"
+SERIAL_GETTY="${3:-ttyS3}"
 SERIAL_BAUD="${4:-1500000}"
 
 # Disable the alternate serial getty so only one console is active.

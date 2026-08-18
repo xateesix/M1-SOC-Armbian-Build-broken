@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 REL=/tmp/rk3308bs-v24-build
-RREL=/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0
-FAC=/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh/03_partitions
+RREL=$PROJECT_ROOT/output/releases/1.0.0
+FAC=$PROJECT_ROOT/output/factory_fresh/03_partitions
 WIN_SCRIPT=/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/windows-pack-update.ps1
 PACK="$REL/pack_input_v16"
 IMG="$PACK/Image"

@@ -35,6 +35,7 @@ VERSION="${VERSION:-dev}"
 MODULES_DIR="${MODULES_DIR:-$SCRIPT_DIR/bsp/modules-factory}"
 SHRINK="${SHRINK:-0}"
 PATCH_BOOT="${PATCH_BOOT:-$SCRIPT_DIR/factory_fresh/tools/patch-bootimg-cmdline.sh}"
+PATCH_UBOOT_MEMLAYOUT="${PATCH_UBOOT_MEMLAYOUT:-$SCRIPT_DIR/tools/patch-uboot-memlayout.py}"
 
 usage() {
     sed -n '1,22p' "$0"
@@ -67,6 +68,10 @@ if [[ "$BOOT_MODE" == "factory" ]]; then
     [[ -f "$FACTORY_DIR/boot.img" ]] || { echo "Missing $FACTORY_DIR/boot.img"; exit 1; }
 fi
 [[ -f "$PATCH_BOOT" ]] || { echo "Missing $PATCH_BOOT"; exit 1; }
+if [[ "$BOOT_MODE" == "armbian" && ! -f "$PATCH_UBOOT_MEMLAYOUT" ]]; then
+    echo "Missing $PATCH_UBOOT_MEMLAYOUT"
+    exit 1
+fi
 
 ROOT_UUID=""
 if [[ -f "$FACTORY_DIR/parameter.txt" ]]; then
@@ -153,6 +158,15 @@ fi
 sudo mkdir -p "$MNT/etc/rk3308bs"
 echo "$VERSION $BUILD_TS" | sudo tee "$MNT/etc/rk3308bs/upgrade-manifest.txt" >/dev/null
 
+sudo mkdir -p "$MNT/lib/firmware"
+printf '%s\n' \
+    '00380480070a3d0001ca280a5a3c0a040000000011110017191e149535ff2e300919' \
+    '00000001041c00000000000000000000001941944502070000049a1b008521ff7428' \
+    '006631005b3b005b0000000000000000000000000000000000000000000000000000' \
+    '000000001d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100' \
+    '2a292827262524232221201f1e1d1c1b191817161514131211100f0e0d0c0b0a0908' \
+    '07060504030201008901' | tr -d '\n' | xxd -r -p | sudo tee "$MNT/lib/firmware/goodix_911_cfg.bin" >/dev/null
+
 sudo umount "$MNT"
 
 if [[ "$SHRINK" == "1" ]]; then
@@ -183,9 +197,20 @@ else
 fi
 
 echo "=== Stage Rockchip pack_input ==="
+UBOOT_SRC="$FACTORY_DIR/uboot.img"
+if [[ "$BOOT_MODE" == "armbian" ]]; then
+    echo "=== Patch U-Boot memory layout for Armbian 6.18 kernel size ==="
+    UBOOT_PATCHED="$OUT_DIR/_uboot-memlayout.img"
+    python3 "$PATCH_UBOOT_MEMLAYOUT" "$FACTORY_DIR/uboot.img" "$UBOOT_PATCHED"
+    UBOOT_SRC="$UBOOT_PATCHED"
+fi
+
 cp "$FACTORY_DIR/MiniLoaderAll.bin" \
-   "$FACTORY_DIR/trust.img" "$FACTORY_DIR/uboot.img" \
+   "$FACTORY_DIR/trust.img" "$UBOOT_SRC" \
    "$FACTORY_DIR/misc.img" "$FACTORY_DIR/recovery.img" "$IMAGE/"
+if [[ "$BOOT_MODE" == "armbian" ]]; then
+    mv -f "$IMAGE/$(basename "$UBOOT_SRC")" "$IMAGE/uboot.img"
+fi
 cp "$BOOTIMG" "$ROOTFS_IMG" "$IMAGE/"
 echo "=== Patch parameter.txt boot partition for boot.img size ==="
 python3 "$SCRIPT_DIR/tools/patch-parameter-boot-size.py" \

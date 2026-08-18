@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
 for label in factory board; do
   echo "=== $label ==="
   F="$REL/_${label}-kernel.dtb"

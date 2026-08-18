@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Revert/patch rootfs for ttyS3 @ 1500000 (Armbian 6.18  -  no fiq-debugger).
 set -euo pipefail
-SRC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0/rootfs.img"
-OUT="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0/rootfs-v11.img"
+SRC="$PROJECT_ROOT/output/releases/1.0.0/rootfs.img"
+OUT="$PROJECT_ROOT/output/releases/1.0.0/rootfs-v11.img"
 DST="/tmp/rootfs-v11.img"
 CONF=/tmp/baud1500000-s3.conf
 

@@ -34,7 +34,7 @@ That is why v9 - v11 (“factory OTP DTB”) still rebooted, and why v12 (passiv
 
 ## Proper fix (match factory behavior)
 
-Requires a **kernel patch**, then rebuild `linux-image-current-rockchip64` (or full Armbian image). DTB-only changes cannot fix the conversion table.
+Requires a **kernel patch**, then rebuild `linux-image-current-rockchip64` (or full Armbian image). DTB-only changes cannot fix the conversion table. In this workspace, the canonical source fix is the recovered `patches/0002-thermal-rockchip-rk3308bs-tsadc.patch` path used by the v67 build line.
 
 ### Option A  -  Recommended (match vendor 5.10)
 
@@ -53,7 +53,7 @@ Requires a **kernel patch**, then rebuild `linux-image-current-rockchip64` (or f
 
 Patch template: `patches/0002-thermal-rockchip-rk3308bs-tsadc.patch` (apply under `userpatches/kernel/rockchip64-current/`).
 
-### Option B  -  Workaround only (current v12)
+### Option B  -  Workaround only (historical v12 stopgap)
 
 - Keep `soc-crit` as passive / very high temp so Linux never emergency-reboots.
 - Sensor readings in `/sys/class/thermal/` may still be nonsense; fine for Klipper if the board stays up.

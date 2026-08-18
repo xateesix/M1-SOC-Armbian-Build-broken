@@ -4,7 +4,7 @@ The factory **S1-SOC** (this Armbian image) is a **secondary host**. It does **n
 
 Decouple UI and camera from the main instance: Moonraker stays on the motion stack; the companion only serves display and webcam streams.
 
-**Status:** v0.64.1 provides the base OS, display, and network. KlipperScreen and Crowsnest install and autostart are **work in progress** on this image. The configuration below is the intended layout once those packages are on the companion.
+**Status:** the image build now stages the companion stack at compile time. The build pulls KIAUH, Klipper, Moonraker, KlipperScreen, and Crowsnest source trees into `/opt/rk3308bs/companion-stack`, then seeds a starter `KlipperScreen.conf` and a companion-stack manifest under `/etc/rk3308bs`.
 
 ## Prerequisites
 
@@ -24,11 +24,10 @@ Note the **IP addresses**:
 
 KlipperScreen only needs the **Moonraker API**. Do **not** install a Klipper MCU stack on the S1-SOC for printer control.
 
-1. Install KlipperScreen on the companion (on Debian/Armbian, follow [KlipperScreen](https://github.com/KlipperScreen/KlipperScreen) docs or [KIAUH](https://github.com/dw-0/kiauh) if compatible with your image).
-2. Edit KlipperScreen config (location varies by install; common paths):
-   - `~/KlipperScreen/KlipperScreen.conf`
-   - `~/.config/KlipperScreen.conf`
-3. Point at the **main** Moonraker instance:
+1. Review `/etc/rk3308bs/companion-stack.env` on the companion.
+2. Install or finish wiring the stack using the staged source trees under `/opt/rk3308bs/companion-stack/repos`.
+3. Edit KlipperScreen config (seeded into `/etc/skel/.config/KlipperScreen.conf` during build, and commonly copied into `~/.config/KlipperScreen.conf` after first boot).
+4. Point at the **main** Moonraker instance:
 
 ```ini
 [printer M1ProX1]
@@ -36,7 +35,7 @@ moonraker_host: <MAIN_HOST_IP>
 moonraker_port: 7125
 ```
 
-4. Restart KlipperScreen. The **480x272** panel on the S1-SOC should show telemetry and controls for the printer on the motion host.
+5. Restart KlipperScreen. The **480x272** panel on the S1-SOC should show telemetry and controls for the printer on the motion host.
 
 Multi-printer / remote Moonraker patterns: [KlipperScreen documentation](https://github.com/KlipperScreen/KlipperScreen) and guides on controlling multiple printers via Moonraker host settings.
 
@@ -46,7 +45,7 @@ Crowsnest is an independent streaming server. It can run on the second host with
 
 References: [Running crowsnest on an external device (Mainsail Crew #2252)](https://github.com/orgs/mainsail-crew/discussions/2252)
 
-1. Install Crowsnest on the S1-SOC (see [crowsnest](https://github.com/mainsail-crew/crowsnest) / KIAUH).
+1. Use the staged `crowsnest` source tree under `/opt/rk3308bs/companion-stack/repos/crowsnest` or install via KIAUH if you prefer its workflow.
 2. Edit `/etc/crowsnest.conf` on the **companion**  -  camera device, resolution, and stream port (commonly **8080**).
 3. Start or restart Crowsnest and confirm the stream is live:
 

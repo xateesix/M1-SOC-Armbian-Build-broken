@@ -2,6 +2,8 @@
 
 Companion image for S1-SOC (KlipperScreen + Crowsnest). Motion Klipper runs on Manta/H36.
 
+During build, the pipeline also bakes in the custom boot logo and stages companion software source trees (KIAUH, Klipper, Moonraker, KlipperScreen, Crowsnest) under `/opt/rk3308bs/companion-stack`.
+
 ```bash
 ./configure.sh
 bash setup-validate.sh

@@ -88,8 +88,8 @@ sudo dd if=Armbian-*.img of=/dev/sdX bs=4M status=progress && sync
 **Change WiFi later:**
 ```bash
 ssh root@BOARD_IP
-nano /etc/wpa_supplicant/wpa_supplicant.conf
-systemctl restart wpa_supplicant
+nano /etc/netplan/01-rk3308bs-wlan0.yaml
+netplan apply
 ```
 
 **View build log:**

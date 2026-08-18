@@ -6,64 +6,46 @@ Subject: [PATCH] arm64: dts: rockchip: add RK3308B-S EVB Analog MIC V11 board
 Add device tree support for the Rockchip RK3308B-S EVB Analog MIC V11
 board (compatible: rockchip,rk3308bs-evb-amic-v11).
 
-Hardware summary:
-  - SoC:     Rockchip RK3308BS (4x Cortex-A35, max 1104 MHz)
-  - RAM:     512 MB DDR3
-  - Storage: eMMC (8-bit HS200) + microSD slot
-  - WiFi:    RTL8189CS via SDIO (GPIO0_A2 reset, GPIO0_A0 wake)
-  - BT:      via UART0 with hardware flow control
-  - USB:     USB2 OTG (Type-C, dwc2) + 2x USB2 Host (EHCI/OHCI)
-  - Display: 4.3" 480x272 RGB panel (VOP + RGB bridge, PWM9 backlight)
-  - Touch:   Goodix GT911 capacitive on I2C3 (remote ribbon FPC)
-  - Audio:   Internal RK3308 ACODEC (analog MIC, HP, speaker)
-  - Console: UART3 @ 1500000 baud
-
 Signed-off-by: Armbian User <user@localhost>
 ---
- arch/arm64/boot/dts/rockchip/Makefile                   |   1 +
- arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts | 357 +++++++++++++++++
- 2 files changed, 358 insertions(+)
+ arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts | 591 +++++++++++++++++
+ 1 file changed, 591 insertions(+)
  create mode 100644 arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts
-
-diff --git a/arch/arm64/boot/dts/rockchip/Makefile b/arch/arm64/boot/dts/rockchip/Makefile
-index 1111111..2222222 100644
---- a/arch/arm64/boot/dts/rockchip/Makefile
-+++ b/arch/arm64/boot/dts/rockchip/Makefile
-@@ -60,6 +60,7 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308-evb.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308-rock-pi-s.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308-rock-pi-s-v11.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308-rock-pi-s-v13.dtb
-+dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3308bs-evb-amic-v11.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-a1.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-evb.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3328-nanopi-r2c.dtb
 
 diff --git a/arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts b/arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts
 new file mode 100644
-index 0000000..3333333
+index 000000000000..333333333333
 --- /dev/null
 +++ b/arch/arm64/boot/dts/rockchip/rk3308bs-evb-amic-v11.dts
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,591 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Device Tree Source for Rockchip RK3308B-S EVB Analog MIC V11
 + *
-+ * Board connectors:
-+ *   USB Type-C OTG    → ff400000 dwc2,  dr_mode = "otg"
-+ *   2× USB-A 5V host  → ff440000 EHCI + ff450000 OHCI
-+ *                        VBUS enable: GPIO0_C5 (active-high)
-+ *   24V power input   → external buck converter, no DTS needed
-+ *   LED +/−           → GPIO0_A6 (green/power), GPIO0_A5 (blue)
-+ *   3-pin RGB         → placeholder, see commented section
-+ *   Serial + jumper   → UART3 @ 1500000 baud (ttyS3)
-+ *   40-pin FPC        → 4.3″ 480×272 RGB LCD via VOP
-+ *   FPC (remote)      → Goodix GT911 capacitive touch on I2C3
-+ *   microSD slot      → ff480000 SDMMC
++ * Board connectors (as described by the owner):
++ *   ┌─────────────────────────────────────────────────────────────────┐
++ *   │  USB Type-C OTG    → ff400000 dwc2,  dr_mode = "otg"           │
++ *   │  2× USB-A 5V host  → ff440000 EHCI + ff450000 OHCI             │
++ *   │                      VBUS enable: GPIO0_C5 (active-high)        │
++ *   │  24V power input   → external buck converter, no DTS needed     │
++ *   │  LED +/−           → GPIO0_A6 (green/power), GPIO0_A5 (blue)   │
++ *   │  3-pin RGB         → placeholder: see commented section below   │
++ *   │  Serial + jumper   → UART3 @ 1500000 baud (ttyS3), OTG jumper  │
++ *   │                      switches USB-C between ADB and serial mode  │
++ *   │  40-pin FPC        → 4.3″ 480×272 RGB LCD via VOP               │
++ *   │  FPC (remote)      → Goodix GT911 capacitive touch on I2C3      │
++ *   │  microSD slot      → ff480000 SDMMC                             │
++ *   └─────────────────────────────────────────────────────────────────┘
 + *
-+ * GPIO CONFLICT NOTES:
-+ *   GPIO0_A2 is shared between WiFi reset and acodec hp-ctl-gpios.
-+ *   GPIO0_A5 is shared between blue LED and acodec spk-ctl-gpios.
-+ *   Both conflicts are documented with comments at the relevant nodes.
++ * GPIO CONFLICT NOTES (from factory DTS analysis):
++ *   GPIO0_A2 is shared between WiFi reset (sdio-pwrseq) AND the
++ *   headphone amp control (acodec hp-ctl-gpios) in the OEM firmware.
++ *   This DTS disables hp-ctl-gpios to avoid the conflict; if you do
++ *   not use WiFi, you can re-enable it.
++ *
++ *   GPIO0_A5 is shared between the blue heartbeat LED AND the speaker
++ *   control (acodec spk-ctl-gpios). Speaker control is commented out
++ *   below — enable it only if you remove the heartbeat LED trigger.
 + */
 +
 +/dts-v1/;
@@ -91,14 +73,26 @@ index 0000000..3333333
 +	};
 +
 +	chosen {
++		/*
++		 * UART3 is the hardware debug serial port.
++		 * The board has a jumper to switch this connector between
++		 * normal serial (this stdout) and USB OTG mode.
++		 */
 +		stdout-path = "serial3:1500000n8";
++		bootargs = "earlycon=uart8250,mmio32,0xff0d0000 console=ttyS3,1500000n8 console=tty1 root=PARTUUID=614e0000-0000-4b53-8000-1d28000054a9 rootfstype=ext4 rw rootwait";
 +	};
 +
 +	memory@0 {
 +		device_type = "memory";
++		/*
++		 * 512 MB — U-Boot/ATF will override this at boot time via
++		 * FDT fixup, but a sane default is required by some paths.
++		 * Change to 0x10000000 for 256 MB or 0x40000000 for 1 GB.
++		 */
 +		reg = <0x00000000 0x00000000 0x00000000 0x20000000>;
 +	};
 +
++	/* ── CPU core voltage (PWM8 @ ff180000, inverted, 827–1340 mV) ── */
 +	vdd_core: vdd-core {
 +		compatible = "pwm-regulator";
 +		pwms = <&pwm8 0 5000 PWM_POLARITY_INVERTED>;
@@ -111,6 +105,7 @@ index 0000000..3333333
 +		regulator-settling-time-up-us = <250>;
 +	};
 +
++	/* ── Fixed voltage rails ──────────────────────────────────────── */
 +	vcc_io: vcc-io {
 +		compatible = "regulator-fixed";
 +		regulator-name = "vcc_io";
@@ -148,6 +143,7 @@ index 0000000..3333333
 +		regulator-max-microvolt = <5000000>;
 +	};
 +
++	/* ── USB Host VBUS (GPIO0_C5, active-high) ──────────────────── */
 +	vbus_host: vbus-host {
 +		compatible = "regulator-fixed";
 +		enable-active-high;
@@ -159,6 +155,12 @@ index 0000000..3333333
 +		regulator-boot-on;
 +	};
 +
++	/* ── Onboard GPIO LEDs ────────────────────────────────────────── */
++	/*
++	 * Physical LED +/− connector on the board routes to these same GPIOs.
++	 * NOTE: GPIO0_A5 (blue) is shared with the acodec speaker control in
++	 * the OEM firmware. See spk-ctl-gpios comment in the &acodec section.
++	 */
 +	leds: leds {
 +		compatible = "gpio-leds";
 +		pinctrl-names = "default";
@@ -180,8 +182,39 @@ index 0000000..3333333
 +		};
 +	};
 +
-+	/* 3-pin RGB connector: uncomment pwm-leds node here if needed */
++	/*
++	 * ── 3-pin RGB connector placeholder ──────────────────────────────
++	 *
++	 * The board has a 3-pin RGB LED header. Three options:
++	 *
++	 * Option A — PWM-driven common-cathode RGB (PWM4/5/6 on GPIO0_A1,
++	 *            GPIO0_B1, GPIO0_B2 respectively). Uncomment & enable the
++	 *            matching &pwm4/5/6 nodes at the bottom of this file.
++	 *
++	 * rgb_leds: rgb-leds {
++	 *     compatible = "pwm-leds";
++	 *     led-red {
++	 *         pwms = <&pwm4 0 10000 0>;
++	 *         max-brightness = <255>;
++	 *         color = <LED_COLOR_ID_RED>;
++	 *     };
++	 *     led-green {
++	 *         pwms = <&pwm5 0 10000 0>;
++	 *         max-brightness = <255>;
++	 *         color = <LED_COLOR_ID_GREEN>;
++	 *     };
++	 *     led-blue {
++	 *         pwms = <&pwm6 0 10000 0>;
++	 *         max-brightness = <255>;
++	 *         color = <LED_COLOR_ID_BLUE>;
++	 *     };
++	 * };
++	 *
++	 * Option B — WS2812/NeoPixel single-wire (needs SPI or dedicated driver).
++	 * Option C — GPIO-only (add to gpio-leds above).
++	 */
 +
++	/* ── LCD backlight (PWM9 @ ff180010) ─────────────────────────── */
 +	backlight: backlight {
 +		compatible = "pwm-backlight";
 +		pwms = <&pwm9 0 25000 0>;
@@ -191,9 +224,15 @@ index 0000000..3333333
 +		power-supply = <&vcc_sys>;
 +	};
 +
++	/*
++	 * ── 40-pin FPC: 4.3-inch 480×272 RGB LCD ──────────────────────
++	 * Timings derived from factory DTS "timing3" (native-mode).
++	 * enable-gpios: GPIO1_A3 active-low (PCB inverter on enable line)
++	 * reset-gpios:  GPIO0_C4 active-low  (standard RST# active-low)
++	 */
 +	panel: panel {
 +		compatible = "simple-panel";
-+		bus-format = <0x100a>;
++		bus-format = <0x100a>;		/* MEDIA_BUS_FMT_RGB888_1X24 */
 +		backlight = <&backlight>;
 +		enable-gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_LOW>;
 +		enable-delay-ms = <20>;
@@ -204,6 +243,7 @@ index 0000000..3333333
 +		display-timings {
 +			native-mode = <&timing_4_3>;
 +
++			/* 4.3-inch 480×272 @ ~9 MHz — from factory DTS timing3 */
 +			timing_4_3: timing0 {
 +				clock-frequency = <9000000>;
 +				hactive      = <480>;
@@ -228,14 +268,53 @@ index 0000000..3333333
 +		};
 +	};
 +
++	/*
++	 * Internal RGB/LCDC output bridge (rockchip,rk3308-rgb).
++	 * The active rk3308.dtsi does not define an `rgb` label, so this node
++	 * must be declared inline for vop -> rgb -> panel routing.
++	 */
++	rgb: rgb {
++		compatible = "rockchip,rk3308-rgb";
++		status = "okay";
++		pinctrl-names = "default";
++		pinctrl-0 = <&lcdc_ctl>, <&lcdc_rgb888_m0>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				rgb_in_vop: endpoint@0 {
++					reg = <0>;
++					remote-endpoint = <&vop_out_rgb>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++
++				rgb_out_panel: endpoint {
++					remote-endpoint = <&panel_in_rgb>;
++				};
++			};
++		};
++	};
++
++	/* ── WiFi power-sequence (RTL8189CS on SDIO) ─────────────────── */
 +	sdio_pwrseq: sdio-pwrseq {
 +		compatible = "mmc-pwrseq-simple";
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&wifi_enable_h>;
++		/* GPIO0_A2 active-low: WiFi chip RESET# */
 +		reset-gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_LOW>;
 +		post-power-on-delay-ms = <200>;
 +	};
 +
++	/* ── ADC buttons (SAR-ADC ch1) ────────────────────────────────── */
 +	adc-keys {
 +		compatible = "adc-keys";
 +		io-channels = <&saradc 1>;
@@ -269,22 +348,17 @@ index 0000000..3333333
 +			press-threshold-microvolt = <18000>;
 +		};
 +	};
-+
-+	acodec_sound: acodec-sound {
-+		compatible = "rockchip,multicodecs-card";
-+		rockchip,card-name = "rockchip,rk3308-acodec";
-+		rockchip,codec-hp-det;
-+		rockchip,mclk-fs = <256>;
-+		rockchip,cpu   = <&i2s2>;
-+		rockchip,codec = <&acodec>;
-+		status = "okay";
-+	};
 +};
 +
++/*
++ * ── RK3308BS: CPU OPP cap at 1104 MHz ────────────────────────────────
++ * The BS variant cannot run at the 1200/1296 MHz OPPs of standard RK3308.
++ */
 +&cpu0_opp_table {
 +	/delete-node/ opp-1200000000;
 +	/delete-node/ opp-1296000000;
 +
++	/* RK3308BS maximum operating point */
 +	opp-1104000000 {
 +		opp-hz = /bits/ 64 <1104000000>;
 +		opp-microvolt = <1200000 1200000 1200000>;
@@ -292,6 +366,7 @@ index 0000000..3333333
 +	};
 +};
 +
++/* ── eMMC (8-bit HS200, non-removable) ───────────────────────────────── */
 +&emmc {
 +	bus-width = <8>;
 +	cap-mmc-highspeed;
@@ -306,6 +381,7 @@ index 0000000..3333333
 +	status = "okay";
 +};
 +
++/* ── microSD card slot ────────────────────────────────────────────────── */
 +&sdmmc {
 +	bus-width = <4>;
 +	cap-sd-highspeed;
@@ -315,6 +391,7 @@ index 0000000..3333333
 +	status = "okay";
 +};
 +
++/* ── SDIO — WiFi RTL8189CS ────────────────────────────────────────────── */
 +&sdio {
 +	bus-width = <4>;
 +	cap-sd-highspeed;
@@ -328,16 +405,22 @@ index 0000000..3333333
 +	status = "okay";
 +};
 +
++/* ── UART3: debug/console serial port ────────────────────────────────── */
 +&uart3 {
 +	status = "okay";
 +};
 +
++/* ── UART0: Bluetooth (with hardware flow control) ────────────────────── */
 +&uart0 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer>, <&uart0_rts>, <&uart0_cts>;
 +	status = "okay";
 +};
 +
++/*
++ * ── I2C3: Goodix GT911 capacitive touch (remote ribbon cable) ──────────
++ * Keep GPIO semantics aligned with the factory tree to avoid probe issues.
++ */
 +&i2c3 {
 +	status = "okay";
 +
@@ -346,27 +429,34 @@ index 0000000..3333333
 +		reg = <0x5d>;
 +		interrupt-parent = <&gpio0>;
 +		interrupts = <RK_PB0 IRQ_TYPE_EDGE_RISING>;
-+		irq-gpios   = <&gpio0 RK_PB0 GPIO_ACTIVE_HIGH>;
++		irq-gpios   = <&gpio0 RK_PB0 4>;
 +		reset-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
-+		touchscreen-size-x = <480>;
-+		touchscreen-size-y = <272>;
++		touchscreen-size-x = <800>;
++		touchscreen-size-y = <480>;
++		max-x = <800>;
++		max-y = <480>;
++		tp-size = <109>;
 +		status = "okay";
 +	};
 +};
 +
++/* ── USB Type-C OTG port (dwc2 ff400000) ─────────────────────────────── */
 +&usb20_otg {
 +	dr_mode = "otg";
 +	status = "okay";
 +};
 +
++/* ── USB Host EHCI (first of 2× USB-A 5V ports) ──────────────────────── */
 +&usb_host_ehci {
 +	status = "okay";
 +};
 +
++/* ── USB Host OHCI (second of 2× USB-A 5V ports) ─────────────────────── */
 +&usb_host_ohci {
 +	status = "okay";
 +};
 +
++/* ── USB 2.0 PHY ──────────────────────────────────────────────────────── */
 +&u2phy {
 +	status = "okay";
 +};
@@ -380,81 +470,131 @@ index 0000000..3333333
 +	status = "okay";
 +};
 +
++/* ── Display: VOP -> RGB bridge -> panel ────────────────────────────────── */
 +&vop {
 +	status = "okay";
 +};
 +
-+&rgb {
++&vop_out {
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	vop_out_rgb: endpoint@0 {
++		reg = <0>;
++		remote-endpoint = <&rgb_in_vop>;
++	};
++};
++
++&display_subsystem {
 +	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&lcdc_ctl>, <&lcdc_rgb888_m0>;
 +};
 +
-+&rgb_out {
-+	remote-endpoint = <&panel_in_rgb>;
-+};
-+
-+&acodec {
++/*
++ * ── Internal RK3308 codec (analog MIC + headphone + speaker) ───────────
++ * spk-ctl-gpios on GPIO0_A5 and hp-ctl-gpios on GPIO0_A2 are omitted due to
++ * LED / WiFi GPIO conflicts (see header comments).
++ */
++&codec {
 +	rockchip,no-deep-low-power;
 +	rockchip,micbias1;
 +	rockchip,micbias2;
-+	/* spk-ctl-gpios = <&gpio0 RK_PA5 GPIO_ACTIVE_HIGH>; conflicts with led-user */
-+	/* hp-ctl-gpios  = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>; conflicts with WiFi reset */
 +	status = "okay";
-+};
-+
-+&i2s2 {
 +	#sound-dai-cells = <0>;
++};
++
++&i2s_8ch_2 {
 +	status = "okay";
 +};
 +
++/ {
++	analog_sound: analog-sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "rockchip,rk3308-acodec";
++		simple-audio-card,mclk-fs = <256>;
++		simple-audio-card,codec-hp-det;
++		simple-audio-card,widgets = "Headphone", "Headphones";
++
++		simple-audio-card,dai-link@0 {
++			format = "i2s";
++
++			cpu {
++				sound-dai = <&i2s_8ch_2>;
++			};
++
++			codec {
++				sound-dai = <&codec>;
++			};
++		};
++	};
++};
++
++/* ── IO voltage domains ────────────────────────────────────────────────── */
 +&io_domains {
 +	vccio0-supply = <&vcc_io>;
 +	vccio1-supply = <&vcc_io>;
 +	vccio2-supply = <&vcc_io>;
-+	vccio3-supply = <&vcc_1v8>;
++	vccio3-supply = <&vcc_1v8>;	/* eMMC interface at 1.8 V */
 +	vccio4-supply = <&vcc_io>;
 +	vccio5-supply = <&vcc_io>;
 +	status = "okay";
 +};
 +
++/* ── Thermal shutdown / throttle ─────────────────────────────────────── */
 +&tsadc {
-+	rockchip,hw-tshut-mode     = <0>;
-+	rockchip,hw-tshut-polarity = <1>;
-+	status = "okay";
++	rockchip,hw-tshut-mode     = <0>;	/* mode 0 = CRU reset */
++	rockchip,hw-tshut-polarity = <1>;	/* active-high */
++	status = "disabled";
 +};
 +
++/* ── SAR ADC (ADC key buttons on channel 1) ──────────────────────────── */
 +&saradc {
 +	vref-supply = <&vcc_1v8>;
 +	status = "okay";
 +};
 +
++/* ── PWM8 (ff180000) — CPU VDD core regulator ─────────────────────────── */
 +&pwm8 {
 +	status = "okay";
 +	pinctrl-names = "active";
 +	pinctrl-0 = <&pwm8_pin_pull_down>;
 +};
 +
++/* ── PWM9 (ff180010) — LCD backlight ──────────────────────────────────── */
 +&pwm9 {
 +	status = "okay";
 +	pinctrl-names = "active";
 +	pinctrl-0 = <&pwm9_pin>;
 +};
 +
++/*
++ * ── PWM4/5/6 (ff170000–010–020) — optional RGB LED connector ───────────
++ * Uncomment these if using PWM-driven RGB LED on the 3-pin connector.
++ * Also uncomment the rgb_leds node in the root node above.
++ *
++ * &pwm4 { status = "okay"; };
++ * &pwm5 { status = "okay"; };
++ * &pwm6 { status = "okay"; };
++ */
++
++/* ── Pinctrl: board-specific pin assignments ─────────────────────────── */
 +&pinctrl {
 +	usb {
++		/* GPIO0_C5 = USB host VBUS enable */
 +		usb_drv: usb-drv {
 +			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +	};
 +
 +	sdio-pwrseq {
++		/* GPIO0_A2 = WiFi RESET# (active-low) */
 +		wifi_enable_h: wifi-enable-h {
 +			rockchip,pins = <0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +	};
 +
 +	wireless-wlan {
++		/* GPIO0_A0 = WiFi WAKE_HOST interrupt */
 +		wifi_wake_host: wifi-wake-host {
 +			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_down>;
 +		};
@@ -469,5 +609,3 @@ index 0000000..3333333
 +		};
 +	};
 +};
--- 
-2.39.0

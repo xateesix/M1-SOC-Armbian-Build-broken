@@ -8,7 +8,7 @@ REL="$REPO/releases/1.0.0"
 TOOLS="$REPO/tools"
 
 if [ ! -d "$AB" ]; then
-  echo "Missing ~/armbian-build  -  clone https://github.com/armbian/build first"
+  echo "Missing $PROJECT_ROOT-build  -  clone https://github.com/armbian/build first"
   exit 1
 fi
 

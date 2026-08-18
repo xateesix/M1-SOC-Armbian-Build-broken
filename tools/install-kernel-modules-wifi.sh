@@ -60,10 +60,10 @@ EOF
 
 cat >"$MNT/etc/systemd/system/rk3308bs-wifi-modules.service" <<'EOF'
 [Unit]
-Description=RK3308BS load 8189fs WiFi modules
+Description=RK3308BS load 8189fs WiFi modules before networking
 DefaultDependencies=no
 After=local-fs.target
-Before=network-pre.target wpa-wlan0.service
+Before=network-pre.target systemd-networkd.service
 
 [Service]
 Type=oneshot

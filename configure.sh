@@ -13,7 +13,7 @@ prompt() { local v="$1" l="$2" s="${3:-0}" d="${4:-}"; local x; if [[ "$s" == "1
 echo "--- Release tarball (required for first build) ---"
 prompt BUILD_ARTIFACTS_URL "BUILD_ARTIFACTS_URL (GitHub Releases tarball)" 0 ""
 
-echo "--- WiFi (optional, blank = configure on device) ---"
+echo "--- WiFi (optional, baked into netplan/networkd) ---"
 prompt WIFI_SSID "WiFi SSID" 0 ""
 prompt WIFI_PASSWORD "WiFi password" 0 ""
 prompt WIFI_COUNTRY "Country" 0 "US"

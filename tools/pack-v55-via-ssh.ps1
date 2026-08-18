@@ -2,17 +2,23 @@
     [string]$ServerUser = "xateesix",
     [string]$ServerHost = "10.22.2.208",
     [string]$ServerPassword = $(if ($env:ARMBIAN_BUILD_SSH_PASS) { $env:ARMBIAN_BUILD_SSH_PASS } else { "" }),
+    [string]$WslRel = $(if ($env:WSL_REL) { $env:WSL_REL } else { "" }),
+    [string]$PackSubdir = $(if ($env:PACK_SUBDIR) { $env:PACK_SUBDIR } else { "pack_input" }),
+    [string]$OutImage = $(if ($env:OUT_IMAGE) { $env:OUT_IMAGE } else { "rk3308bs-emmc-fixed.img" }),
+    [string]$ServerRel = $(if ($env:SERVER_REL) { $env:SERVER_REL } else { "" }),
+    [string]$ReleaseDir = $(if ($env:RELEASE_DIR) { $env:RELEASE_DIR } else { "..\pack\releases\1.0.0" }),
+    [string]$FinishLog = $(if ($env:FINISH_LOG) { $env:FINISH_LOG } else { "/tmp/armbian-m1-build/finish-v55.log" }),
     [switch]$SkipPull
 )
 
+if (-not $WslRel) { throw "Set WSL_REL to the WSL destination release path." }
+if (-not $ServerRel) { throw "Set SERVER_REL to the server release path." }
+
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$Rel = Join-Path $RepoRoot "releases\1.0.0"
-$PackLocal = Join-Path $Rel "pack_input_v54"
-$OutImage = "rk3308bs-1.0.0-emmc-fixed-v55.img"
-$ServerRel = "/tmp/armbian-m1-build/releases/1.0.0"
-$ServerPack = "$ServerRel/pack_input_v54"
-$FinishLog = "/tmp/armbian-m1-build/finish-v55.log"
+$Rel = Join-Path $RepoRoot $ReleaseDir
+$PackLocal = Join-Path $Rel $PackSubdir
+$ServerPack = Join-Path $ServerRel $PackSubdir
 
 if (-not $ServerPassword) {
     throw "Set ARMBIAN_BUILD_SSH_PASS or pass -ServerPassword for xateesix@$ServerHost"
@@ -55,9 +61,8 @@ if ($logTail -notmatch "SERVER_STAGE_DONE") {
 }
 
 if (-not $SkipPull) {
-    Write-Host "Rsync pack_input_v54 from server..."
-    $wslRel = "/mnt/c/Workspaces/Armbian-M1-SOC/releases/1.0.0"
-    $rsyncInner = "export SSHPASS='$ServerPassword'; mkdir -p '$wslRel/pack_input_v54' && rsync -avz --delete -e 'sshpass -e ssh -o StrictHostKeyChecking=accept-new' ${ServerUser}@${ServerHost}:$ServerPack/ '$wslRel/pack_input_v54/'"
+    Write-Host "Rsync $PackSubdir from server..."
+    $rsyncInner = "export SSHPASS='$ServerPassword'; mkdir -p '$WslRel/$PackSubdir' && rsync -avz --delete -e 'sshpass -e ssh -o StrictHostKeyChecking=accept-new' ${ServerUser}@${ServerHost}:$ServerPack/ '$WslRel/$PackSubdir/'"
     wsl -e bash -lc $rsyncInner
     if ($LASTEXITCODE -ne 0) { throw "rsync from server failed (exit $LASTEXITCODE)" }
 }

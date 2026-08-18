@@ -3,12 +3,12 @@
 # Do NOT use rootfs:grow in parameter.txt  -  RKDevTool leaves rootfs unwritten/corrupt.
 # eMMC grow is handled on first boot by rk3308bs-grow-rootfs.service.
 set -euo pipefail
-REL="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/releases/1.0.0"
-FAC="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/factory_fresh/03_partitions"
+REL="$PROJECT_ROOT/output/releases/1.0.0"
+FAC="$PROJECT_ROOT/output/factory_fresh/03_partitions"
 PACK="$REL/pack_input_v22"
 IMG="$PACK/Image"
 ROOTFS="${1:-$REL/rootfs-v22.img}"
-TOOLS="/mnt/c/Users/john.X86/Downloads/RKDevTool_Release_v2.86/RKDevTool_Release_v2.86/Output/Armbian/tools"
+TOOLS="$PROJECT_ROOT/output/tools"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT

@@ -126,7 +126,7 @@ Manual WiFi/password changes:
 
 **Q: WiFi not connecting**
 - Check SSID/password in config.env match your network
-- SSH to board: `systemctl restart wpa_supplicant`
+- SSH to board: `netplan apply`
 - Check: `wpa_cli status`
 
 See **README.md** for more troubleshooting
