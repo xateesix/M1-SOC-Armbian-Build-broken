@@ -403,6 +403,8 @@
  */
 &i2c3 {
 	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3_xfer>;
 
 	touchscreen@5d {
 		compatible = "goodix,gt911";
