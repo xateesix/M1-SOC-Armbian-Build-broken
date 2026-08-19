@@ -42,8 +42,8 @@ def compile_dts_source(dts: Path, out: Path, kernel_root: Path | None = None) ->
 
     if kernel_root is None:
         candidates = [
-            Path("/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-Pro-SOC_armbian-build/armbian-project/cache/sources/linux-kernel-worktree"),
-            Path("/home/xateesix/armbian-build/cache/sources/linux-kernel-worktree"),
+            Path("/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build/cache/sources/linux-kernel-worktree"),
+            Path("/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build/cache/sources/linux-kernel-worktree"),
         ]
         found = None
         for cand in candidates:

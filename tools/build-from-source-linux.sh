@@ -13,7 +13,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
-ARMBIAN_BUILD_PATH_DEFAULT="/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-Pro-SOC_armbian-build/armbian-project"
+ARMBIAN_BUILD_PATH_DEFAULT="/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build/armbian-project"
 ARMBIAN_BUILD_PATH="${ARMBIAN_BUILD_PATH:-$ARMBIAN_BUILD_PATH_DEFAULT}"
 RELEASE_TAG="${RELEASE_TAG:-v64-from-source-linux}"
 DIST_RELEASE="${DIST_RELEASE:-bookworm}"
@@ -33,7 +33,7 @@ CONFIG_FILE=""
 for candidate in \
     "$ARMBIAN_BUILD_PATH/config.env" \
     "$PROJECT_ROOT/config.env" \
-    "$WORKSPACE_ROOT/M1-Pro-SOC_armbian-build/armbian-project/config.env"; do
+    "$WORKSPACE_ROOT/M1-SOC-Armbian-Build/config.env"; do
     if [[ -f "$candidate" ]]; then
         CONFIG_FILE="$candidate"
         break
@@ -119,7 +119,7 @@ resolve_factory_dir() {
     fi
 
     local candidate
-    candidate="$WORKSPACE_ROOT/M1-Pro-SOC_armbian-build/config/Armbian-M1-Pro-X1_SOC/Armbian-M1-SOC/factory_fresh/03_partitions"
+    candidate="$WORKSPACE_ROOT/M1-SOC-Armbian-Build/factory_fresh/03_partitions"
     if [[ -d "$candidate" ]]; then
         echo "$candidate"
         return 0

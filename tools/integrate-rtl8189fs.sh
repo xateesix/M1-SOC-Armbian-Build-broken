@@ -3,7 +3,7 @@
 set -euo pipefail
 
 KDIR="${1:-$HOME/linux-v13-build}"
-AB="${2:-$HOME/armbian-build}"
+AB="${2:-${ARMBIAN_BUILD_PATH:-/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build}}"
 COMMIT="876e627a5b6a8021700391b4249a4a31edfebe5c"
 CACHE="$(mktemp -d)"
 trap 'rm -rf "$CACHE"' EXIT

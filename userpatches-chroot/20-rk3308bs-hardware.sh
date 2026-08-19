@@ -134,4 +134,15 @@ EOF
 systemctl daemon-reload 2>/dev/null || true
 systemctl enable restore-thermal-trip.service 2>/dev/null || true
 
+# Install system diagnosis and validation scripts
+# These arrive via the overlay-user bind-mount at /tmp/overlay
+mkdir -p /usr/local/sbin
+for script in rk3308bs-validation.sh rk3308bs-diagnose.sh; do
+    if [[ -f "/tmp/overlay/usr/local/sbin/$script" ]]; then
+        cp "/tmp/overlay/usr/local/sbin/$script" "/usr/local/sbin/$script"
+        chmod 0755 "/usr/local/sbin/$script"
+        echo "[rk3308bs] Installed /usr/local/sbin/$script"
+    fi
+done
+
 echo "[rk3308bs] Hardware userland configured"

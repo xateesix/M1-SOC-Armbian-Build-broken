@@ -9,6 +9,7 @@ ARMBIAN_IMG=""
 IMAGE=""
 DTB=""
 DTB_SOURCE="${DTB_SOURCE:-$REPO/dts/rk3308bs-evb-amic-v11.dts}"
+KERNEL_ROOT="${KERNEL_ROOT:-}"
 OUT_BOOT=""
 FACTORY_DIR="${FACTORY_DIR:-$REPO/factory_fresh/03_partitions}"
 RESOURCE_TEMPLATE="${RESOURCE_TEMPLATE:-$REPO/factory_fresh/04_boot_unpacked/resource.img}"
@@ -80,6 +81,18 @@ if [[ ! -f "$RESOURCE_TEMPLATE" && -f "$FACTORY_DIR/../04_boot_unpacked/resource
     RESOURCE_TEMPLATE="$FACTORY_DIR/../04_boot_unpacked/resource.img"
 fi
 if [[ ! -f "$RESOURCE_TEMPLATE" ]]; then
+    if [[ -f "$FACTORY_DIR/boot.img" && -f "$SCRIPT_DIR/../factory_fresh/unpack-boot.sh" ]]; then
+        echo "=== Deriving missing resource.img template from factory boot.img ==="
+        (
+            cd "$SCRIPT_DIR/../factory_fresh"
+            INSTALL_DEPS=0 bash ./unpack-boot.sh
+        )
+        if [[ -f "$FACTORY_DIR/../04_boot_unpacked/resource.img" ]]; then
+            RESOURCE_TEMPLATE="$FACTORY_DIR/../04_boot_unpacked/resource.img"
+        fi
+    fi
+fi
+if [[ ! -f "$RESOURCE_TEMPLATE" ]]; then
     echo "Missing resource.img template. Run: cd factory_fresh && ./unpack-boot.sh"
     exit 1
 fi
@@ -103,8 +116,8 @@ PATCH_ARGS=(
     --output "$PATCHED_DTB"
     --console "$CONSOLE"
 )
-if [[ -f "$DTB_SOURCE" ]]; then
-       PATCH_ARGS+=(--dts "$DTB_SOURCE")
+if [[ -n "$KERNEL_ROOT" ]]; then
+    PATCH_ARGS+=(--dts "$DTB_SOURCE" --kernel-root "$KERNEL_ROOT")
 fi
 if [[ -n "$ROOT_UUID" ]]; then
     PATCH_ARGS+=(--root-uuid "$ROOT_UUID")

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Verify 0002 patch applies on top of Armbian 6.18 rk3308 tsadc patch.
 set -euo pipefail
-AB="$HOME/armbian-build"
+AB="${ARMBIAN_BUILD_PATH:-/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build}"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 

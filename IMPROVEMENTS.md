@@ -12,7 +12,7 @@ The new build system addresses your concerns:
 - No reuse of cached files
 
 **New way:**
-- Creates **persistent ~/armbian-build on your Ubuntu server**
+- Creates **persistent /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build on your local workspace**
 - Caches all toolchains, sources, downloads
 - Subsequent builds take only **20-30 minutes** (just kernel recompile)
 - Automatic git pull keeps packages fresh
@@ -54,7 +54,7 @@ Single source-of-truth for your setup. Edit once, reuse forever:
 ```bash
 BUILD_SERVER_HOST="ubuntu-server"
 BUILD_SERVER_USER="xateesix"
-BUILD_SERVER_PATH="/home/xateesix/armbian-build"
+BUILD_SERVER_PATH="/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build"
 
 WIFI_SSID="OurIOT"
 WIFI_PASSWORD="mNhTYTeh#p3LnRw^Ln*N3VwiD"
@@ -130,7 +130,7 @@ Windows: Image ready
          │ SSH + SCP files
          ▼
 ┌─ Ubuntu Server (Fast Reuse) ──┐
-│ ~/armbian-build (persistent)  │
+│ /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build (persistent) │
 │ ├─ Toolchains (cached)        │
 │ ├─ Kernel source (cached)     │
 │ └─ Build environment          │

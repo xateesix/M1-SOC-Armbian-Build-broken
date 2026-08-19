@@ -17,4 +17,4 @@ WiFi is **not** pre-configured on the published image.
 
 | Asset | Path on SD/eMMC |
 |-------|-----------------|
-| Hardware overview video | Not on device — see repo [`Media/VID_20260615_141308204.mp4`](https://github.com/xateesix/M1Pro-SOC-Armbian-Public/blob/main/Media/VID_20260615_141308204.mp4) |
+| Hardware overview video | Not on device — see repo [`Media/VID_20260615_141308204.mp4`](https://github.com/xateesix/M1-SOC-Armbian-Build-scripts-public/blob/main/Media/VID_20260615_141308204.mp4) |

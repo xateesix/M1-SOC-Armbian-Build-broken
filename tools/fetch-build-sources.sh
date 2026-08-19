@@ -6,7 +6,7 @@ REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG="$REPO/config.env"
 [[ -f "$CONFIG" ]] && source "$CONFIG"
 
-ARMBIAN_BUILD="${BUILD_ARMBIAN_PATH:-$HOME/armbian-build}"
+ARMBIAN_BUILD="${BUILD_ARMBIAN_PATH:-/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build}"
 KERNEL_SRC="${KERNEL_SRC_PATH:-$HOME/linux-v6.18}"
 REL="$REPO/releases/1.0.0"
 FAC_PART="$REPO/factory_fresh/03_partitions"

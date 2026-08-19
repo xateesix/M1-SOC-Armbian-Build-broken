@@ -64,7 +64,7 @@ cd /tmp
 git clone https://github.com/YOUR_USER/rk3308bs-armbian.git rk3308bs-conf
 
 # Symlink into Armbian build
-cd ~/armbian-build
+cd /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build
 ln -sf /tmp/rk3308bs-conf/userpatches/* userpatches/ 2>/dev/null || true
 ln -sf /tmp/rk3308bs-conf/config/boards/* config/boards/ 2>/dev/null || true
 
@@ -95,7 +95,7 @@ git push origin main
 ```bash
 ssh xateesix@ubuntu-server
 cd /tmp/rk3308bs-conf && git pull
-# Changes now live in ~/armbian-build
+# Changes now live in /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build
 ```
 
 ---

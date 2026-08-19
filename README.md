@@ -134,7 +134,7 @@ Host-role rule: if build and flash are on different machines, upload the image t
 
 1. From **GitHub Releases**, download `rk3308bs-1.0.0-emmc-fixed-v64.img`
 
-Release: [v0.64.1](https://github.com/xateesix/M1Pro-SOC-Armbian-Public/releases/tag/v0.64.1) — `rk3308bs-1.0.0-emmc-fixed-v64.img` and `build-artifacts-v0.64.1.tar.gz`.
+Release: [v0.64.1](https://github.com/xateesix/M1-SOC-Armbian-Build-scripts-public/releases/tag/v0.64.1) — `rk3308bs-1.0.0-emmc-fixed-v64.img` and `build-artifacts-v0.64.1.tar.gz`.
 2. Flash with RKDevTool  ->  **Upgrade Firmware**
 3. **Change the default password** on first login
 

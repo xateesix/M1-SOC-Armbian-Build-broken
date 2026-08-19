@@ -120,6 +120,7 @@ sudo dd if="$ROOT_DEV" of="$ROOTFS_IMG" bs=4M status=progress conv=sparse
 
 if [[ -n "$ROOT_UUID" ]]; then
     command -v tune2fs >/dev/null || { echo "Install e2fsprogs"; exit 1; }
+    sudo e2fsck -f -y "$ROOTFS_IMG"
     echo "Setting rootfs PARTUUID: $ROOT_UUID"
     sudo tune2fs -U "$ROOT_UUID" "$ROOTFS_IMG"
 fi

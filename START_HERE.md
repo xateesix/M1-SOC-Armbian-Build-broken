@@ -117,7 +117,7 @@ Manual WiFi/password changes:
 **Q: Build takes forever**
 - First build downloads ~2GB of toolchains (normal)
 - Later builds much faster (cached)
-- Check: `ssh xateesix@ubuntu-server tail -f ~/armbian-build/output/logs/*.log`
+- Check: `ssh xateesix@ubuntu-server tail -f /home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build/output/logs/*.log`
 
 **Q: No serial output after flashing**
 - Check UART3 connection (not UART0)
@@ -148,7 +148,7 @@ Windows Machine (You)          Ubuntu Server (Build)
     ├─ build-enhanced.sh ──────────▶| (Start build)
     |                               |
     |                        [Armbian Build]
-    |                        ├─ Clone/update armbian-build/ (persistent)
+    |                        ├─ Clone/update M1-SOC-Armbian-Build/ (persistent)
     |                        ├─ Apply your DTS patch
     |                        ├─ Create WiFi overlay
     |                        ├─ Create password script
@@ -172,7 +172,7 @@ Windows Machine (You)          Ubuntu Server (Build)
 ```bash
 BUILD_SERVER_HOST="ubuntu-server"    # Where Armbian builds
 BUILD_SERVER_USER="xateesix"
-BUILD_SERVER_PATH="/home/xateesix/armbian-build"
+BUILD_SERVER_PATH="/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build"
 
 WIFI_SSID="YOUR_WIFI_SSID"                   # Pre-configured in image
 WIFI_PASSWORD="mNhTYTeh#..."

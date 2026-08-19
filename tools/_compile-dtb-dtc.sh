@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-KWT=/home/xateesix/armbian-build/cache/sources/linux-kernel-worktree/6.18__rockchip64__arm64
+ARMBIAN_ROOT="${ARMBIAN_ROOT:-/home/xateesix/scratch/Projects/rk3308bs-workspace/M1-SOC-Armbian-Build}"
+KWT="$ARMBIAN_ROOT/cache/sources/linux-kernel-worktree/6.18__rockchip64__arm64"
 SRC=/tmp/rk3308bs-evb-amic-v11.dts
 PRE=/tmp/rk3308bs-evb-amic-v11.pre.dts
 OUT=/tmp/rk3308bs-evb-amic-v11.dtb

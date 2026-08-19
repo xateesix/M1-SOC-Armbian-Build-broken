@@ -48,7 +48,7 @@ The v64 line **repatches and repacks** GPL inputs; it does not recompile the ker
 | `M1-SOC-armbian-build` | `github.com/armbian/build` | Image compile framework, `compile.sh`, board hooks |
 | `M1-SOC-linux` | `github.com/gregkh/linux` branch `linux-6.18.y` | Kernel + our `patches/*.patch` as commits or quilt series |
 | `M1-SOC-Armbian-Build` (existing private) | — | Board integration, v64 pack pipeline, docs, release scripts |
-| `M1Pro-SOC-Armbian-Public` (existing public) | export of sanitized tree + Releases |
+| `M1-SOC-Armbian-Build-scripts-public` (current public) | export of sanitized tree + Releases |
 
 Optional: vendor `factory_fresh` partition templates in this repo or a small `M1-SOC-rk3308-factory` submodule (Rockchip loader binaries are redistributable per vendor terms; document provenance).
 
